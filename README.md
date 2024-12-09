@@ -6,7 +6,7 @@ Purpose:
 - There are 2 kinds of pneumonia, if present: bacterial and viral
 
 Data set used:
-- From Kaggle: https://www.kaggle.com/datasets/paultimothymooney/chest-xray-pneumonia
+- https://data.mendeley.com/datasets/dvntn9yhd2/1
 
 Methods of exploration:
 - CNN 
@@ -14,14 +14,14 @@ Methods of exploration:
 - SVM (to distinguish between borderline cases of pneumonia)
 
 to-do:
-- data processing
 - experiment with one of the methods above
 - Performance evaluation
 
 Logistic Regression:
-- pictures have size 871 kb -> perform lasso regression to 
+- 
 
 Milestones/Workflow:
-1. Process images
+1. Gain idea on how to Process images (complete) for Logistic Regression
+2. Apply PCA to images to reduce dimensionality of data and repeat as above
 
 For further reference: https://chatgpt.com/share/67541aac-79b0-8002-aef6-56f8d22079b3 

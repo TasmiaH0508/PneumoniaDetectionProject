@@ -1,37 +1,15 @@
 import os
 import numpy as np
-from PIL import Image # use pillow for image processing
+from PIL import Image
 
-image_folder = "./chest_xray/train/NORMAL"
-target_size = (1857, 1317) # resize all the images to be the smallest possible
-
-image_folder_1 = "./chest_xray/train/NORMAL"
-image_folder_2 = "./chest_xray/train/PNEUMONIA"
-
-def find_smallest_size(image_folder):
-    min_width = float('inf')
-    min_height = float('inf')
-    min_file = ""
-    for filename in os.listdir(image_folder):
-        image_path = os.path.join(image_folder, filename)
-        img = Image.open(image_path)
-        image_size = img.size
-        if image_size[0] < min_height:
-            min_file = filename
-            min_height = image_size[0]
-        if image_size[1] < min_width:
-            min_file = filename
-            min_width = image_size[1]
-    print(min_file)
-    return min_width, min_height
-
-print(find_smallest_size(image_folder_1))
-print(find_smallest_size(image_folder_2))
+image_folder = "./Data/COVID"
+image_folder_1 = "./Data/NORMAL"
+target_size = (256, 256)
 
 def process_images(image_folder, target_size):
     image_features = []
     for filename in os.listdir(image_folder):
-        if filename.endswith(".jpeg") or filename.endswith(".jpg"):
+        if filename.endswith(".png"):
             # Load image
             image_path = os.path.join(image_folder, filename)
             img = Image.open(image_path).convert("L")  # Convert to grayscale
@@ -49,12 +27,22 @@ def process_images(image_folder, target_size):
             image_features.append(img_array)
     return np.array(image_features)
 
-"""""""""
-# Process all images
+"""""""""""
+# COVID data has shape (1626, 65536). The rows are the number of data samples and cols are pixels
 image_data = process_images(image_folder, target_size)
+# If covid is present, 1. If normal, 0
+one_col = np.ones((image_data.shape[0], 1))
+image_data = np.concatenate((image_data, one_col), axis=1)
+print(image_data)
+image_data_normal = process_images(image_folder_1, target_size)
+zeros_col = np.zeros((image_data_normal.shape[0], 1))
+image_data_normal = np.concatenate((image_data_normal, zeros_col), axis=1)
+print(image_data_normal)
 
-print(image_data.shape)
-print(image_data[0])
+#np.save('COVIDData', image_data) # saves data
 
-print("Processing complete")
+#check_data = np.load('NormalData.npy') # for loading data
+
 """""
+
+# Reduce Dimensionality of Data
