@@ -18,7 +18,7 @@ to-do:
 - Performance evaluation
 
 Logistic Regression:
-- 
+- neural net
 
 Milestones/Workflow:
 1. Gain idea on how to Process images (complete) for Logistic Regression
