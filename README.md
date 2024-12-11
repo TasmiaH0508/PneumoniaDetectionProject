@@ -7,6 +7,8 @@ Purpose:
 
 Data set used:
 - https://data.mendeley.com/datasets/dvntn9yhd2/1
+- There are 1800 pneumonia samples in the training set (pick )
+- There are 1802 normal samples in the training set
 
 Methods of exploration:
 - CNN 
@@ -19,6 +21,9 @@ to-do:
 
 Logistic Regression:
 - neural net
+
+Points to consider:
+- using Google Colab
 
 Milestones/Workflow:
 1. Gain idea on how to Process images (complete) for Logistic Regression
