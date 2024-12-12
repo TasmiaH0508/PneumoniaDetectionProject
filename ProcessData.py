@@ -5,7 +5,7 @@ from PIL import Image
 
 P_folder = "./Raw Data/PNEUMONIA"
 NORMAL_folder_1 = "./Raw Data/NORMAL"
-target_size = (64, 64) # original_target_size = (256, 256). The size (64, 64) can still work for a total of 400 samples
+target_size = (256, 256) # The size (64, 64) can still work for a total of 400 samples
 
 def process_images(image_folder, target_size):
     image_features = []
@@ -130,8 +130,7 @@ def process_data():
     number_of_normal_samples = normal_data.shape[0]
     total_samples = number_of_pneumonia_samples + number_of_normal_samples
     zeros_col = np.zeros(number_of_normal_samples)
-    output_col = np.hstack((ones_col, zeros_col))
-    output_col = np.reshape(output_col, (total_samples, 1))
+    output_col = np.vstack((ones_col, zeros_col))
     processed_data = np.hstack((reduced_combined_data, output_col))
     bias_col = np.ones(total_samples)
     bias_col = np.reshape(bias_col, (total_samples, 1))
@@ -151,10 +150,12 @@ def process_data():
     # check_data = np.load('NormalData.npy') # for loading data
 
 def process_data_in_batches(folder_1, folder_2, sample_size=200):
-    processed_data_1 = process_images(folder_1)
+    processed_data_1 = process_images(folder_1, target_size)
     number_of_data_points_data_1 = processed_data_1.shape[0]
-    processed_data_2 = process_images(folder_2)
+    processed_data_2 = process_images(folder_2, target_size)
     number_of_data_points_data_2 = processed_data_2.shape[0]
+
+    number_of_features = 65536
 
     # reduce data size
     np.random.seed(46)
@@ -162,11 +163,48 @@ def process_data_in_batches(folder_1, folder_2, sample_size=200):
     data_1 = processed_data_1[random_indices] # has shape: (sample_size, 65536)
     random_indices = np.random.choice(number_of_data_points_data_2, sample_size, replace=False)
     data_2 = processed_data_2[random_indices]
+    # stack data_1 on TOP of data_2
     joined_data = np.vstack((data_1, data_2)) # has shape: (2*sample_size, 65536) ~ (400, 65536) if sample size is 200
 
     # process data_1
+    data_chunks = []
+    i = 0
+    while i < number_of_features:
+        # pick 64 * 64 columns at one time
+        num_columns_to_pick = 64 * 64
+        if i + num_columns_to_pick > number_of_features:
+            data_to_add = joined_data[i:number_of_features]
+        else:
+            data_to_add = joined_data[:, i : i + num_columns_to_pick]
+        data_chunks.append(data_to_add)
+        i += num_columns_to_pick
+
+    processed_data = None
+    for data_chunk in data_chunks:
+        processed_data_chunk = pca(data_chunk)
+        if processed_data is None:
+            processed_data = processed_data_chunk
+        else:
+            processed_data = torch.hstack((processed_data, processed_data_chunk))
+
+    # add in bias col
+    total_samples = number_of_data_points_data_1 + number_of_data_points_data_2
+    bias_col = torch.ones(total_samples)
+    bias_col = torch.reshape(bias_col, (total_samples, 1))
+    processed_data = np.hstack((bias_col, processed_data))
+
+    # add in the labels
+    # the label for data 1(TOP) is 0 and for data 2(BOTTOM), it is 1
+    zeros_col = torch.zeros(number_of_data_points_data_1)
+    zeros_col = torch.reshape(zeros_col, (number_of_data_points_data_1, 1))
+    ones_col = torch.ones(number_of_data_points_data_2)
+    ones_col = torch.reshape(ones_col, (number_of_data_points_data_2, 1))
+    label_col = torch.vstack((zeros_col, ones_col))
+    processed_data = np.hstack((processed_data, label_col))
+
+    #todo: save the data
 
 
 #process_data_in_batches(P_folder, NORMAL_folder_1)
 
-process_data()
+#process_data()
