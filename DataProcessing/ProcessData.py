@@ -5,8 +5,8 @@ from PIL import Image
 
 import torch
 
-P_folder = "./Raw Data/PNEUMONIA"
-NORMAL_folder_1 = "./Raw Data/NORMAL"
+P_folder = "../RawData/PNEUMONIA"
+NORMAL_folder_1 = "../RawData/NORMAL"
 target_size = (256, 256)
 
 def process_images(image_folder, target_size):
@@ -77,6 +77,7 @@ def pca_with_batch_processing(data, batch_size=400):
     for i in range(0, num_data_points, batch_size):
         batch_end = min(i + batch_size, num_data_points)
         mean_centred_data[:, i:batch_end] = data[:, i:batch_end] - mean_matrix
+    print("Mean centred data computed.")
     # do batch processing
     covariance_matrix = torch.zeros((num_features, num_features))
     for i in range(0, num_features, batch_size):
@@ -84,11 +85,13 @@ def pca_with_batch_processing(data, batch_size=400):
         batch = mean_centred_data[:, i:batch_end]
         covariance_matrix += batch @ batch.T
     covariance_matrix /= num_data_points
+    print("Covariance matrix computed.")
     # perform svd
     U, S, _ = torch.linalg.svd(covariance_matrix)
     explained_variance_ratio = torch.cumsum(S, dim=0)/ torch.sum(S)
     r = torch.searchsorted(explained_variance_ratio, 0.99) + 1
     U_reduced = U[:, : r].float()
+    print("U reduced data computed.")
     # reduce data, no reconstruction is performed since the goal here is to reduce dimensions
     # take transpose so that the shape is the same as the original data
     # do batch processing
@@ -97,11 +100,8 @@ def pca_with_batch_processing(data, batch_size=400):
         batch_end = min(i + batch_size, num_data_points)
         batch = mean_centred_data[:, i:batch_end].float()
         Z[i:batch_end] = (U_reduced.T @ batch).T
+    print("Z reduced data computed.")
     return Z # is a tensor
-
-# np.save('COVIDData', image_data) # saves data
-
-# check_data = np.load('NormalData.npy') # for loading data
 
 def process_data_in_batches(raw_data_1, raw_data_2, sample_size=200):
     '''''''''
@@ -109,8 +109,13 @@ def process_data_in_batches(raw_data_1, raw_data_2, sample_size=200):
     must be the same for each matrix.
     
     Procedure:
-    1. Stack raw_data_1 on top of raw_data_2
-    2. 
+    1. Pick random rows from raw_data_1 and raw_data_2
+    2. Stack the processed raw_data_1 on top of raw_data_2
+    3. Perform PCA
+    4. Add the bias column
+    5. Add the label col
+    
+    Returns data with reduced features. The rows are observations and the columns are features.
     '''''''''''
     number_of_data_points_data_1 = raw_data_1.shape[0]
     number_of_data_points_data_2 = raw_data_2.shape[0]
@@ -125,6 +130,7 @@ def process_data_in_batches(raw_data_1, raw_data_2, sample_size=200):
     data_2 = raw_data_2[random_indices]
     # stack data_1 on TOP of data_2
     joined_data = np.vstack((data_1, data_2)) # has shape: (2*sample_size, num_features)
+    print("Data joined with shape: ", joined_data.shape)
 
     # process data_1
     data_chunks = []
@@ -147,19 +153,20 @@ def process_data_in_batches(raw_data_1, raw_data_2, sample_size=200):
             processed_data = processed_data_chunk
         else:
             processed_data = torch.hstack((processed_data, processed_data_chunk))
+    print("PCA complete.")
 
     # add in bias col
-    total_samples = number_of_data_points_data_1 + number_of_data_points_data_2
+    total_samples = 2 * sample_size
     bias_col = torch.ones(total_samples)
     bias_col = torch.reshape(bias_col, (total_samples, 1))
     processed_data = np.hstack((bias_col, processed_data))
 
     # add in the labels
     # the label for data 1(TOP) is 0 and for data 2(BOTTOM), it is 1
-    zeros_col = torch.zeros(number_of_data_points_data_1)
-    zeros_col = torch.reshape(zeros_col, (number_of_data_points_data_1, 1))
-    ones_col = torch.ones(number_of_data_points_data_2)
-    ones_col = torch.reshape(ones_col, (number_of_data_points_data_2, 1))
+    zeros_col = torch.zeros(sample_size)
+    zeros_col = torch.reshape(zeros_col, (sample_size, 1))
+    ones_col = torch.ones(sample_size)
+    ones_col = torch.reshape(ones_col, (sample_size, 1))
     label_col = torch.vstack((zeros_col, ones_col))
     processed_data = np.hstack((processed_data, label_col))
 
@@ -169,7 +176,7 @@ raw_data_1 = process_images(P_folder, target_size)
 raw_data_2 = process_images(NORMAL_folder_1, target_size)
 # if pneumonia present, label is 0
 PvNormalData = process_data_in_batches(raw_data_1, raw_data_2)
+print(PvNormalData.shape)
 
-#todo: save the data to a file
-
-torch.save(PvNormalData, "./PVNormalData.pt")
+data_to_save = torch.tensor(PvNormalData).numpy()
+np.save("../ProcessedData/PvNormalData", data_to_save)

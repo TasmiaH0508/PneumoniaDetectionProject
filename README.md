@@ -11,8 +11,8 @@ Data set used:
 - There are 1802 normal samples in the training set
 
 Methods of exploration:
-- CNN 
-- logistic regression (pixel-wise)
+- CNN
+- logistic regression (pixel-wise) -> Neural Network and Normal...
 - SVM (to distinguish between borderline cases of pneumonia)
 
 to-do:
