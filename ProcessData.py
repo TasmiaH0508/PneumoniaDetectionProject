@@ -5,8 +5,8 @@ from PIL import Image
 
 import torch
 
-P_folder = "../RawData/PNEUMONIA"
-NORMAL_folder_1 = "../RawData/NORMAL"
+P_folder = "./RawData/PNEUMONIA"
+NORMAL_folder_1 = "./RawData/NORMAL"
 target_size = (256, 256)
 
 def process_images(image_folder, target_size):
@@ -103,7 +103,20 @@ def pca_with_batch_processing(data, batch_size=400):
     print("Z reduced data computed.")
     return Z # is a tensor
 
-def process_data_in_batches(raw_data_1, raw_data_2, sample_size=200):
+def normalise_data_min_max(data):
+    '''''
+    Input is a data matrix of shape (number of observations, number of data points) and is a torch tensor
+
+    Returns data of the same shape after min-max scaling
+    '''''''''
+    min_matrix = torch.min(data, dim=0)[0]
+    max_matrix = torch.max(data, dim=0)[0]
+    range_matrix = max_matrix - min_matrix
+    range_matrix = torch.where(range_matrix == 0, 1, range_matrix)
+    normalised_data = (data - min_matrix) / range_matrix
+    return normalised_data
+
+def process_data_in_batches(raw_data_1, raw_data_2, sample_size=200, normalised=True):
     '''''''''
     Takes in 2 matrices, each of which is a numpy array of shape (num data points, num features). Note that num columns 
     must be the same for each matrix.
@@ -155,6 +168,10 @@ def process_data_in_batches(raw_data_1, raw_data_2, sample_size=200):
             processed_data = torch.hstack((processed_data, processed_data_chunk))
     print("PCA complete.")
 
+    if normalised:
+        processed_data = normalise_data_min_max(processed_data)
+        print("Normalised data, min-max scaled.")
+
     # add in bias col
     total_samples = 2 * sample_size
     bias_col = torch.ones(total_samples)
@@ -179,4 +196,4 @@ PvNormalData = process_data_in_batches(raw_data_1, raw_data_2)
 print(PvNormalData.shape)
 
 data_to_save = torch.tensor(PvNormalData).numpy()
-np.save("../ProcessedData/PvNormalData", data_to_save)
+np.save("./ProcessedData/PvNormalDataNormalised", data_to_save)

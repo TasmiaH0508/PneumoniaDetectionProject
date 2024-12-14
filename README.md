@@ -22,9 +22,6 @@ to-do:
 Logistic Regression:
 - neural net
 
-Points to consider:
-- using Google Colab
-
 Milestones/Workflow:
 1. Gain idea on how to Process images (complete) for Logistic Regression
 2. Apply PCA to images to reduce dimensionality of data and repeat as above
