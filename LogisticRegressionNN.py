@@ -1,1 +1,0 @@
-# logistic regression with neural network
