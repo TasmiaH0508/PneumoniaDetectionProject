@@ -2,23 +2,21 @@ import numpy as np
 import torch
 import cvxopt
 
-# do SVM with kernel trick, to implement from scratch
-
 data = np.load("./ProcessedData/PvNormalDataNormalised.npy")
 data = torch.from_numpy(data) # Use data as tensor
 print(data.shape)
 
 # data shape is expected to be (number of observations, number of features) = (400, 1936),
 # provided that sample size was not chosen
-def SVM(data, gamma=0.1):
+def SVMNonLinear(data, gamma=0.1):
     '''''''''
     Input:
     - Data is normalised and has shape (number of observations, number of features)
     - gamma = 1 / (2 * standard_deviation ^ 2), is a hyperparameter
+    
+    Returns 
     '''
     num_data_points = data.shape[0]
-    # Kernel trick (Gaussian)
-    # Represent as a matrix where K[i, j] = K(x_i, x_j)
     K = torch.zeros((num_data_points, num_data_points))
     computed = torch.zeros((num_data_points, num_data_points))
     memo = torch.zeros((num_data_points, num_data_points))
@@ -37,11 +35,40 @@ def SVM(data, gamma=0.1):
                 computed[i, j] = 1
     # solve the problem using the dual objective function
     # Since SVM is being performed wo regularisation, set C to be a very large value
+    # Solve quadratic problem
     labels = data[:, -1]
-    # todo, with package CVXOPT
-    return 0
+    C = 400
+    P = cvxopt.matrix(torch.outer(labels, labels) * K) # equivalent to K.y^Ty, is the quadratic term
+    q = cvxopt.matrix(-torch.ones(num_data_points)) # linear term
+    G = cvxopt.matrix(torch.vstack((-torch.eye(num_data_points), torch.eye(num_data_points))))
+    h = cvxopt.matrix(torch.hstack((torch.zeros(num_data_points), torch.ones(num_data_points) * C)))
+    A = cvxopt.matrix(labels.reshape(1, -1).astype('double'))
+    b = cvxopt.matrix(0.0)
+
+    solution = cvxopt.solvers.qp(P, q, G, h, A, b)
+    alpha = torch.ravel(solution['x'])
+    print("Alpha is:", alpha)
+    print("Alpha has the shape:", alpha.shape)
+
+    # find support vectors
+    threshold = 1e-5
+    indices_for_support_vectors = torch.where(alpha > threshold)[0]
+    print("The indices for the support vectors are:", indices_for_support_vectors)
+    support_vectors = data[indices_for_support_vectors]
+    support_alpha = alpha[indices_for_support_vectors]
+    support_labels = labels[indices_for_support_vectors]
+
+    # compute b
+    b = support_labels[0] - torch.sum(support_alpha * support_labels * K[indices_for_support_vectors[0], indices_for_support_vectors])
+    #todo: debug and testing
+
+    return support_vectors, support_alpha, support_labels, b
 
 def kernel_trick(pt_1, pt_2, gamma):
     a = torch.linalg.norm(pt_1 - pt_2)
     p = - (a * a) + gamma
     return torch.exp(p)
+
+def predict(data):
+    #todo
+    return 0
