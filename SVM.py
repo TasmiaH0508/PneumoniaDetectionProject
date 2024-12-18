@@ -60,7 +60,7 @@ def SVMNonLinear(data, gamma=0.1):
 
     # compute b
     b = support_labels[0] - torch.sum(support_alpha * support_labels * K[indices_for_support_vectors[0], indices_for_support_vectors])
-    #todo: debug and testing
+    #todo: debug and testing, with scikit learning
 
     return support_vectors, support_alpha, support_labels, b
 

@@ -17,9 +17,10 @@ device = (
 print(f"Using {device} device")
 
 class NeuralNetwork(nn.Module):
-    def __init__(self):
+    def __init__(self, input_size):
+        # WARNING: input size may change with different runs of PCA
         super().__init__()
-        self.L1 = nn.Linear(1935, 968, bias=False)
+        self.L1 = nn.Linear(input_size, 968, bias=False)
         self.L2 = nn.LeakyReLU(negative_slope=0.2)
         self.L3 = nn.Linear(968, 242)
         self.L4 = nn.LeakyReLU(negative_slope=0.2)
@@ -42,13 +43,11 @@ class NeuralNetwork(nn.Module):
 # Process data first
 
 data = np.load("../ProcessedData/PvNormalDataNormalised.npy")
-data = torch.from_numpy(data) # has shape (400, 1936), where the last col is the label
+data = torch.from_numpy(data)
 data_without_label = data[:, 0: 1935]
 label = data[:, 1935]
 number_of_data_points = label.shape[0]
 label = torch.reshape(label, (label.shape[0], 1))
-
-model = NeuralNetwork()
 
 def train_model(epochs, data_without_label, optimiser, save_weights=True, use_old_weights=False):
     '''''''''
@@ -60,28 +59,32 @@ def train_model(epochs, data_without_label, optimiser, save_weights=True, use_ol
     If use_old_weights=False, the model will not use the weights previously generated for learning
     '''
     if use_old_weights:
-        state_dict = torch.load("./torch_weights.pth", weights_only=True)
-        model.load_state_dict(state_dict)
+        try:
+            state_dict = torch.load("./torch_weights.pth", weights_only=True)
+            model.load_state_dict(state_dict)
+        except FileNotFoundError:
+            print("File not found, old weights cannot be used. Training new model...")
 
     loss_fn = nn.BCELoss()
     for i in range(epochs):
         optimiser.zero_grad()
-        y_pred = model(data_without_label)
-        loss = loss_fn(y_pred, label)
+        y_pred = model(data_without_label) # compute the value of y_hat (not the same as the expected label)
+        loss = loss_fn(y_pred, label) # compute loss
+        # perform back propagation (computes partial derivatives of loss with respect to weights for optimisation):
         loss.backward()
         optimiser.step()
 
     if save_weights:
         weights = model.state_dict()
-        torch.save(weights, "./torch_weights.pth")
+        torch.save(weights, "./torch_weights.pth") # overwrites old weights with new weights
 
 def predict(data_without_label, threshold_probability):
-    model.load_state_dict(torch.load("./torch_weights.pth", weights_only=True))
-    model.eval()
-    predictions = model(data_without_label)
-    print(predictions)
+    # need to split data into training and test set
+    # todo: think about whether predict should be using test or training data
+    y_pred = model(data_without_label)
+    print(y_pred.shape)
     return 0
 
+model = NeuralNetwork(data_without_label.shape[1])
 optimiser = torch.optim.SGD(model.parameters(), lr=0.0001, momentum=0)
-#train_model(50, data_without_label, optimiser, save_weights=True, use_old_weights=False)
-predict(data_without_label, 0.5)
+train_model(50, data_without_label, optimiser, use_old_weights=True)

@@ -4,6 +4,9 @@ import numpy as np
 from PIL import Image
 
 import torch
+from numpy.ma.core import shape
+
+from scratch import un_selected_indices
 
 P_folder = "./RawData/PNEUMONIA"
 NORMAL_folder_1 = "./RawData/NORMAL"
@@ -40,11 +43,14 @@ def pca(data):
     '''''''''''
     Takes a 2D np array and returns a 2D np array, with reduced number of features. The shape of the output 
     is (num data points, reduced number of features)
+    
+    Returns also the indices of the features kept
     '''''
+    #todo: find a method so that the indices of the features kept can be returned
     # data has the shape (number of data points, number of features)
     data = data.T
     data = torch.from_numpy(data)
-    # data now has the shape (number of features, number of sata points)
+    # data now has the shape (number of features, number of data points)
     num_data_points = data.shape[1]
     mean_matrix = torch.mean(data, dim=0)
     mean_centred_data = data - mean_matrix
@@ -64,7 +70,10 @@ def pca_with_batch_processing(data, batch_size=400):
     '''''''''
     Takes a 2D np array and returns a 2D np array, with reduced number of features. The shape of the output 
     is (num data points, reduced number of features). Is faster for large data sets.
+    
+    Returns also the indices of the features kept
     '''
+    # todo: find a method so that the indices of the features kept can be returned
     # data has the shape (number of data points, number of features)
     data = data.T
     data = torch.from_numpy(data)
@@ -101,7 +110,7 @@ def pca_with_batch_processing(data, batch_size=400):
         batch = mean_centred_data[:, i:batch_end].float()
         Z[i:batch_end] = (U_reduced.T @ batch).T
     print("Z reduced data computed.")
-    return Z # is a tensor
+    return Z
 
 def normalise_data_min_max(data):
     '''''
@@ -121,6 +130,8 @@ def process_data_in_batches(raw_data_1, raw_data_2, sample_size=200, normalised=
     Takes in 2 matrices, each of which is a numpy array of shape (num data points, num features). Note that num columns 
     must be the same for each matrix.
     
+    Note that raw_data_1 will have the label of 0 and raw_data_2 will have the label of 1.
+    
     Procedure:
     1. Pick random rows from raw_data_1 and raw_data_2
     2. Stack the processed raw_data_1 on top of raw_data_2
@@ -130,6 +141,7 @@ def process_data_in_batches(raw_data_1, raw_data_2, sample_size=200, normalised=
     
     Returns data with reduced features. The rows are observations and the columns are features.
     '''''''''''
+    #todo: think about the way the test data should be handled
     number_of_data_points_data_1 = raw_data_1.shape[0]
     number_of_data_points_data_2 = raw_data_2.shape[0]
 
@@ -137,10 +149,10 @@ def process_data_in_batches(raw_data_1, raw_data_2, sample_size=200, normalised=
 
     # reduce data size by randomly picking data points, since original data set is quite large
     np.random.seed(46)
-    random_indices = np.random.choice(number_of_data_points_data_1, sample_size, replace=False)
-    data_1 = raw_data_1[random_indices] # has shape: (sample_size, num_features)
-    random_indices = np.random.choice(number_of_data_points_data_2, sample_size, replace=False)
-    data_2 = raw_data_2[random_indices]
+    random_indices_1 = np.random.choice(number_of_data_points_data_1, sample_size, replace=False)
+    data_1 = raw_data_1[random_indices_1] # has shape: (sample_size, num_features)
+    random_indices_2 = np.random.choice(number_of_data_points_data_2, sample_size, replace=False)
+    data_2 = raw_data_2[random_indices_2]
     # stack data_1 on TOP of data_2
     joined_data = np.vstack((data_1, data_2)) # has shape: (2*sample_size, num_features)
     print("Data joined with shape: ", joined_data.shape)
@@ -176,7 +188,7 @@ def process_data_in_batches(raw_data_1, raw_data_2, sample_size=200, normalised=
     total_samples = 2 * sample_size
     bias_col = torch.ones(total_samples)
     bias_col = torch.reshape(bias_col, (total_samples, 1))
-    processed_data = np.hstack((bias_col, processed_data))
+    processed_data = torch.hstack((bias_col, processed_data))
 
     # add in the labels
     # the label for data 1(TOP) is 0 and for data 2(BOTTOM), it is 1
@@ -185,15 +197,16 @@ def process_data_in_batches(raw_data_1, raw_data_2, sample_size=200, normalised=
     ones_col = torch.ones(sample_size)
     ones_col = torch.reshape(ones_col, (sample_size, 1))
     label_col = torch.vstack((zeros_col, ones_col))
-    processed_data = np.hstack((processed_data, label_col))
+    processed_data = torch.hstack((processed_data, label_col))
 
     return processed_data
 
-raw_data_1 = process_images(P_folder, target_size)
-raw_data_2 = process_images(NORMAL_folder_1, target_size)
-# if pneumonia present, label is 0
+# WARNING: Data shape may change due to different runs of PCA, due to randomisation
+raw_data_1 = process_images(NORMAL_folder_1, target_size)
+raw_data_2 = process_images(P_folder, target_size)
+# if pneumonia present, label is 1
 PvNormalData = process_data_in_batches(raw_data_1, raw_data_2)
 print(PvNormalData.shape)
 
-data_to_save = torch.tensor(PvNormalData).numpy()
-np.save("./ProcessedData/PvNormalDataNormalised", data_to_save)
+training_data_to_save = torch.tensor(PvNormalData).numpy()
+np.save("./ProcessedData/TrainingSet/PvNormalDataNormalised", training_data_to_save)
