@@ -8,6 +8,8 @@ print(data.shape)
 
 # data shape is expected to be (number of observations, number of features) = (400, 1936),
 # provided that sample size was not chosen
+
+#todo: SVM with linear, hingeloss and Gaussian
 def SVMNonLinear(data, gamma=0.1):
     '''''''''
     Input:
