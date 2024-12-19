@@ -1,23 +1,25 @@
 import numpy as np
 import torch
-from ProcessData import pca, normalise_data_min_max, pca_with_batch_processing
+from ProcessData import pca, normalise_data_min_max, pca_with_batch_processing, get_features_to_be_kept
 
-'''''''''''
+
 #Passed:
 data = np.array([[1, 1, 10, 25],
                         [1, 11, 11, 25],
                         [1, 2, 12, 25]], dtype=float) # the rows are the observations
-'''''
+
 '''''''''''
 #Passed:
 data = np.array([[1, 1, 10, 25],
                         [1, 11, 11, 25],
                         [1, 2, 12, 24]], dtype=float) # the rows are the observations
 '''''
+'''''''''''
 #Passed
 data = np.array([[1, 25, 10, 1],
                         [1, 25, 11, 11],
                         [1, 25, 12, 2]], dtype=float)
+'''''
 
 num_features = data.shape[0]
 num_data_pts = data.shape[1]
@@ -46,19 +48,22 @@ U_reduced = U[:, :r]
 Z = U_reduced.T @ data
 
 reconstructed_data = (U_reduced @ Z).T
-print("This is the expected result:\n", reconstructed_data)
+print("This is the expected PCA result:\n", reconstructed_data)
 
 variance_of_reconstructed_data = torch.var(U_reduced, dim=1)
 
-data = np.array([[1, 25, 10, 1],
-                        [1, 25, 11, 11],
-                        [1, 25, 12, 2]], dtype=float)
+data = np.array([[1, 1, 10, 25],
+                        [1, 11, 11, 25],
+                        [1, 2, 12, 25]], dtype=float) # the rows are the observations
+
 data = torch.from_numpy(data)
 
 data = normalise_data_min_max(data)
-#pca_result = pca(data)
-pca_result = pca_with_batch_processing(data, batch_size=2)
-print(pca_result)
+#pca_result = pca_with_batch_processing(data, 1)
+pca_result = pca(data)
+#print("This is the result of the function:\n", pca_result)
+
+var_of_pca_result = get_features_to_be_kept(pca_result)
 
 # Since there are many samples and a large number of features, perform PCA in the following manner:
 # 1. Normalise the data
