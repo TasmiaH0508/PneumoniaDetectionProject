@@ -1,25 +1,30 @@
 import numpy as np
 import torch
-from ProcessData import pca, normalise_data_min_max, pca_with_batch_processing, get_features_to_be_kept
+from ProcessData import pca, normalise_data_min_max
 
+arr_1 = np.array([[1, 1, 10, 25],
+                     [1, 11, 11, 25],
+                     [1, 2, 12, 25]], dtype=float)  # the rows are the observations
 
-#Passed:
-data = np.array([[1, 1, 10, 25],
-                        [1, 11, 11, 25],
-                        [1, 2, 12, 25]], dtype=float) # the rows are the observations
-
-'''''''''''
-#Passed:
-data = np.array([[1, 1, 10, 25],
+arr_2 = np.array([[1, 1, 10, 25],
                         [1, 11, 11, 25],
                         [1, 2, 12, 24]], dtype=float) # the rows are the observations
-'''''
-'''''''''''
-#Passed
-data = np.array([[1, 25, 10, 1],
+
+arr_3 = np.array([[1, 25, 10, 1],
                         [1, 25, 11, 11],
-                        [1, 25, 12, 2]], dtype=float)
-'''''
+                        [1, 25, 12, 2]], dtype=float) # the rows are the observations
+
+data_arrays = [arr_1, arr_2, arr_3]
+
+def test_normalise_data_min_max():
+    test_res_1 =
+    for i in range(len(data_arrays)):
+        #todo
+
+def test_PCA():
+    for i in range(len(data_arrays)):
+        data = data_arrays[i]
+        #todo
 
 num_features = data.shape[0]
 num_data_pts = data.shape[1]
@@ -63,13 +68,7 @@ data = normalise_data_min_max(data)
 pca_result = pca(data)
 #print("This is the result of the function:\n", pca_result)
 
-var_of_pca_result = get_features_to_be_kept(pca_result)
-
-# Since there are many samples and a large number of features, perform PCA in the following manner:
-# 1. Normalise the data
-# 2. Randomly select some data points which will be a part of the test set
-# 3. Perform PCA and reconstruct data (Note that the data shape will be the same as the original data set, just that
-# some dimensions are more squashed than before)
-# 4. Compute the variances feature-wise and remove features with very little variance, at the same time keeping track
-# of the indices of the features being removed
-# 5. Store the indices for the test set.
+# test ideology/process_data
+data = np.array([[1, 1, 10, 25],
+                        [1, 11, 11, 25],
+                        [1, 2, 12, 25]], dtype=float) # the rows are the observations
