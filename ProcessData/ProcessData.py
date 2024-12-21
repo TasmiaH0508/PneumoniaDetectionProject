@@ -258,7 +258,7 @@ def process_test_and_training_data_in_batches(raw_data_1, raw_data_2, sample_siz
 
     # Find the indices of the features that display little variance across samples, threshold_var is 0.01 if not declared otherwise
     indices_with_sufficiently_large_variance = get_features_with_sufficient_var(processed_training_data,
-                                                                                threshold_var=0.025)
+                                                                                threshold_var=0.03)
 
     # Process training data by removing irrelevant features, adding bias col and label col
     processed_training_data = processed_training_data[:, indices_with_sufficiently_large_variance]
@@ -293,11 +293,14 @@ def main():
 
     training_data_to_save = PvNormalDataTrain.numpy()
     testing_data_to_save = PvNormalDataTest.numpy()
-    np.save("../ProcessedData/TestSet/PvNormalDataNormalised_var0.025", training_data_to_save)
-    np.save("../ProcessedData/TrainingSet/PvNormalDataNormalised_var0.025", testing_data_to_save)
+    np.save("../ProcessedData/TestSet/PvNormalDataNormalised_var0.03", training_data_to_save)
+    np.save("../ProcessedData/TrainingSet/PvNormalDataNormalised_var0.03", testing_data_to_save)
 
 """""""""
-Keep 0.02 variance -> 16% reduction in features
-keep 0.04 variance -> 73% reduction in features
-keep 0.025 variance -> 27% reduction in features
+Keep 0.02 variance -> 16% reduction in features, test_data_shape: (3202, 54984), training_data_shape: (400, 54984)
+Keep 0.04 variance -> 73% reduction in features, test_data_shape: (3202, 2), training_data_shape: (400, 2) 
+Keep 0.025 variance -> 27% reduction in features, test_data_shape: (3202, 47863), training_data_shape: (400, 47863)
+Keep 0.03 variance -> 42% reduction in features, test_data_shape: (3202, 37398), training_data_shape: (400, 37398)
 """
+
+main()
