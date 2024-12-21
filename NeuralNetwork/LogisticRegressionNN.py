@@ -1,10 +1,6 @@
 import torch
 from torch import nn
 import numpy as np
-from ComputeMetrics import get_accuracy
-
-data = np.load("../ProcessedData/PvNormalDataNormalised.npy")
-data = torch.from_numpy(data)
 
 device = (
     "cuda"
@@ -17,10 +13,10 @@ device = (
 print(f"Using {device} device")
 
 class NeuralNetwork(nn.Module):
-    def __init__(self, input_size):
+    def __init__(self, num_input_features):
         # WARNING: input size may change with different runs of PCA
         super().__init__()
-        self.L1 = nn.Linear(input_size, 968, bias=False)
+        self.L1 = nn.Linear(num_input_features, 968, bias=False)
         self.L2 = nn.LeakyReLU(negative_slope=0.2)
         self.L3 = nn.Linear(968, 242)
         self.L4 = nn.LeakyReLU(negative_slope=0.2)
@@ -40,16 +36,25 @@ class NeuralNetwork(nn.Module):
         x = self.L8(x)
         return x
 
-# Process data first
+# work on data where there is 0.03 variance
+train_data = np.load("../ProcessedData/TrainingSet/PvNormalDataNormalised_var0.03.npy")
+train_data = torch.from_numpy(train_data).float()
 
-data = np.load("../ProcessedData/PvNormalDataNormalised.npy")
-data = torch.from_numpy(data)
-data_without_label = data[:, 0: 1935]
-label = data[:, 1935]
-number_of_data_points = label.shape[0]
-label = torch.reshape(label, (label.shape[0], 1))
+test_data = np.load("../ProcessedData/TestSet/PvNormalDataNormalised_var0.03.npy")
+test_data = torch.from_numpy(test_data).float()
 
-def train_model(epochs, data_without_label, optimiser, save_weights=True, use_old_weights=False):
+num_input_features = train_data.shape[1] - 1
+
+train_data_without_label = train_data[:, 0 : num_input_features]
+test_data_without_label = test_data[:, 0 : num_input_features]
+
+train_data_label = train_data[:, num_input_features]
+test_data_label = test_data[:, num_input_features]
+
+model = NeuralNetwork(num_input_features)
+optimiser = torch.optim.SGD(model.parameters(), lr=0.0001, momentum=0)
+
+def train_model(epochs, data_without_label, label, optimiser, save_weights=True, use_old_weights=False):
     '''''''''
     Trains neural network with given parameters.
     
@@ -79,12 +84,5 @@ def train_model(epochs, data_without_label, optimiser, save_weights=True, use_ol
         torch.save(weights, "./torch_weights.pth") # overwrites old weights with new weights
 
 def predict(data_without_label, threshold_probability):
-    # need to split data into training and test set
-    # todo: think about whether predict should be using test or training data
-    y_pred = model(data_without_label)
-    print(y_pred.shape)
-    return 0
 
-model = NeuralNetwork(data_without_label.shape[1])
-optimiser = torch.optim.SGD(model.parameters(), lr=0.0001, momentum=0)
-train_model(50, data_without_label, optimiser, use_old_weights=True)
+    return 0
