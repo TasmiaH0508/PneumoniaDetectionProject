@@ -9,6 +9,7 @@ P_folder = "../RawData/PNEUMONIA"
 NORMAL_folder_1 = "../RawData/NORMAL"
 target_size = (256, 256)
 
+
 def process_images(image_folder, target_size):
     ''''''''''
     Takes a folder of '.png' images and returns a 2D np array, where the rows are the data points and 
@@ -61,6 +62,7 @@ def pca(data):
     reconstructed_data = (U_reduced @ Z).T  # transpose so that the data format remains the same
     return reconstructed_data
 
+
 def pca_with_batch_processing(data, batch_size=400):
     '''''''''''
     Takes a 2D torch array and returns a 2D torch array, with reduced number of features. The shape of the output 
@@ -93,6 +95,7 @@ def pca_with_batch_processing(data, batch_size=400):
     print("Reconstructed data")
     return reconstructed_data
 
+
 def normalise_data_min_max(data):
     '''''
     Input is a data matrix of shape (number of observations, number of data points) and is a torch tensor
@@ -106,6 +109,7 @@ def normalise_data_min_max(data):
     normalised_data = (data - min_matrix) / range_matrix
     return normalised_data  # is a tensor
 
+
 def get_features_with_sufficient_var(data, threshold_var=0.01):
     ''''''''''
     Takes in data that has been reconstructed after PCA and the threshold variance. Is a torch tensor has 
@@ -118,9 +122,10 @@ def get_features_with_sufficient_var(data, threshold_var=0.01):
     feature_indices = torch.arange(num_features)
     indices_of_features_to_keep = torch.where(variance_feature_wise >= threshold_var, feature_indices, -1)
     indices_of_features_to_keep = torch.where(indices_of_features_to_keep != -1)[0]
-    return indices_of_features_to_keep
+    return indices_of_features_to_keep  # torch tensor
 
-def stack_and_label_data(data_1, data_2, num_data_pts_1, num_data_pts_2, normalised=True):
+
+def stack_and_label_data(data_1, data_2, num_data_pts_1, num_data_pts_2, normalised=True, bias=True):
     '''''''''''
     Stacks data_1 on top data_2. data_1 will have the label 0 and data_2 will have the label 1.
     Adds the bias col and label col.
@@ -132,22 +137,26 @@ def stack_and_label_data(data_1, data_2, num_data_pts_1, num_data_pts_2, normali
     ones_col = torch.reshape(ones_col, (num_data_pts_2, 1))
     label_col = torch.vstack((zeros_col, ones_col))
 
-    total_data_pts = num_data_pts_1 + num_data_pts_2
-    bias_col = torch.ones(total_data_pts)
-    bias_col = torch.reshape(bias_col, (total_data_pts, 1))
-
     joined_data = torch.vstack((data_1, data_2))
 
     if normalised:
         joined_data = normalise_data_min_max(joined_data)
 
-    processed_data = torch.hstack((bias_col, joined_data, label_col))
+    processed_data = torch.hstack((joined_data, label_col))
+
+    if bias:
+        total_data_pts = num_data_pts_1 + num_data_pts_2
+        bias_col = torch.ones(total_data_pts)
+        bias_col = torch.reshape(bias_col, (total_data_pts, 1))
+        processed_data = torch.hstack((bias_col, processed_data))
+
     return processed_data
+
 
 def add_bias_and_label(data, num_zero_label):
     '''''''''
     Note: Used for data that has been stacked beforehand
-    
+
     Data has the shape of (total num of observations, features). Data is a torch tensor
     Prepends bias col and appends the labels col, where the 0s are above the 1s
     '''
@@ -166,15 +175,19 @@ def add_bias_and_label(data, num_zero_label):
 
     return processed_data
 
+
 def pick_observations_and_features(data, rows_to_remove, cols_to_keep):
     '''''''''''
     Takes data(torch tensor), which is of shape (number of observations, number of features), rows_to_remove(np array)
-    and cols_to_keep(np array)
-    
+    and cols_to_keep(torch tensor)
+
     Returns data, with relevant rows removed and features kept, as a torch tensor
     '''
     if rows_to_remove is not None:
         num_observations = data.shape[0]
+        temp = -np.ones(num_observations)
+        temp[rows_to_remove] = rows_to_remove
+        rows_to_remove = temp
         rows_to_keep = np.arange(num_observations)
         rows_to_keep = np.where(rows_to_keep != rows_to_remove, rows_to_keep, -1)
         rows_to_keep = np.where(rows_to_keep != -1)[0]
@@ -182,6 +195,7 @@ def pick_observations_and_features(data, rows_to_remove, cols_to_keep):
     if cols_to_keep is not None:
         data = data[:, cols_to_keep]
     return data
+
 
 def process_test_and_training_data_in_batches(raw_data_1, raw_data_2, sample_size=200):
     '''''''''
@@ -242,23 +256,33 @@ def process_test_and_training_data_in_batches(raw_data_1, raw_data_2, sample_siz
             processed_training_data = torch.hstack((processed_training_data, processed_data_chunk))
     print("PCA complete and Data reconstructed")
 
-    # Find the indices of the features that display little variance across samples
-    indices_with_sufficiently_large_variance = get_features_with_sufficient_var(processed_training_data)
+    # Find the indices of the features that display little variance across samples, threshold_var is 0.01 if not declared otherwise
+    indices_with_sufficiently_large_variance = get_features_with_sufficient_var(processed_training_data,
+                                                                                threshold_var=0.025)
 
     # Process training data by removing irrelevant features, adding bias col and label col
     processed_training_data = processed_training_data[:, indices_with_sufficiently_large_variance]
     processed_training_data = add_bias_and_label(processed_training_data, sample_size)
 
     # Process data for test set by taking only the relevant observations and columns/features
-    test_data_1 = pick_observations_and_features(raw_data_1, random_indices_1_train, indices_with_sufficiently_large_variance)
-    test_data_2 = pick_observations_and_features(raw_data_2, random_indices_2_train, indices_with_sufficiently_large_variance)
+    test_data_1 = pick_observations_and_features(raw_data_1, random_indices_1_train,
+                                                 indices_with_sufficiently_large_variance)
+    test_data_2 = pick_observations_and_features(raw_data_2, random_indices_2_train,
+                                                 indices_with_sufficiently_large_variance)
 
     number_of_data_pts_1_test = test_data_1.shape[0]
     number_of_data_pts_2_test = test_data_2.shape[0]
     # Stack data, normalise, add bias col and label col
-    processed_test_data = stack_and_label_data(test_data_1, test_data_2, number_of_data_pts_1_test, number_of_data_pts_2_test)
+    processed_test_data = stack_and_label_data(test_data_1, test_data_2, number_of_data_pts_1_test,
+                                               number_of_data_pts_2_test)
 
-    return processed_training_data, processed_test_data
+    print("The shape of the training data is:", processed_training_data.shape)
+    print("The shape of the test data is:", processed_test_data.shape)
+    print("The number of features has been reduced by(in %):",
+          ((number_of_features - processed_training_data.shape[1]) / number_of_features) * 100)
+
+    return processed_training_data, processed_test_data  # both are tensors
+
 
 def main():
     # Process final data
@@ -267,7 +291,13 @@ def main():
     # if pneumonia present, label is 1
     PvNormalDataTrain, PvNormalDataTest = process_test_and_training_data_in_batches(raw_data_1, raw_data_2)
 
-    training_data_to_save = torch.tensor(PvNormalDataTrain).numpy()
-    testing_data_to_save = torch.tensor(PvNormalDataTest).numpy()
-    np.save("./ProcessedData/TrainingSet/PvNormalDataNormalised", training_data_to_save)
-    np.save("./ProcessedData/TestSet/PvNormalDataNormalised", testing_data_to_save)
+    training_data_to_save = PvNormalDataTrain.numpy()
+    testing_data_to_save = PvNormalDataTest.numpy()
+    np.save("../ProcessedData/TestSet/PvNormalDataNormalised_var0.025", training_data_to_save)
+    np.save("../ProcessedData/TrainingSet/PvNormalDataNormalised_var0.025", testing_data_to_save)
+
+"""""""""
+Keep 0.02 variance -> 16% reduction in features
+keep 0.04 variance -> 73% reduction in features
+keep 0.025 variance -> 27% reduction in features
+"""

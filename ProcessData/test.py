@@ -1,6 +1,6 @@
 import numpy as np
 import torch
-from ProcessData import pca, normalise_data_min_max
+from ProcessData import *
 
 arr_1 = np.array([[1, 1, 10, 25],
                      [1, 11, 11, 25],
@@ -16,15 +16,8 @@ arr_3 = np.array([[1, 25, 10, 1],
 
 data_arrays = [arr_1, arr_2, arr_3]
 
-def test_normalise_data_min_max():
-    test_res_1 =
-    for i in range(len(data_arrays)):
-        #todo
-
-def test_PCA():
-    for i in range(len(data_arrays)):
-        data = data_arrays[i]
-        #todo
+data = data_arrays[2]
+print("This is the starting data:\n", data)
 
 num_features = data.shape[0]
 num_data_pts = data.shape[1]
@@ -55,20 +48,23 @@ Z = U_reduced.T @ data
 reconstructed_data = (U_reduced @ Z).T
 print("This is the expected PCA result:\n", reconstructed_data)
 
-variance_of_reconstructed_data = torch.var(U_reduced, dim=1)
-
-data = np.array([[1, 1, 10, 25],
-                        [1, 11, 11, 25],
-                        [1, 2, 12, 25]], dtype=float) # the rows are the observations
+data = data_arrays[2]
 
 data = torch.from_numpy(data)
 
 data = normalise_data_min_max(data)
-#pca_result = pca_with_batch_processing(data, 1)
-pca_result = pca(data)
-#print("This is the result of the function:\n", pca_result)
 
-# test ideology/process_data
-data = np.array([[1, 1, 10, 25],
-                        [1, 11, 11, 25],
-                        [1, 2, 12, 25]], dtype=float) # the rows are the observations
+pca_result = pca(data)
+
+features_with_sufficient_var = get_features_with_sufficient_var(pca_result)
+print('Features with sufficient var:', features_with_sufficient_var)
+
+print(pick_observations_and_features(pca_result, None, features_with_sufficient_var))
+
+arr = np.array([1, 2])
+arr = torch.from_numpy(arr)
+arr = arr.numpy()
+np.save("../ProcessedData/TestSet/test", arr)
+
+#arr = np.load("../ProcessedData/TestSet/test.npy")
+print(arr)
