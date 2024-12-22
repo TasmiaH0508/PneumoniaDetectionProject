@@ -1,62 +1,57 @@
-import numpy as np
+from sklearn.svm import SVC
 import torch
-import cvxopt
+from ComputeMetrics import *
 
-# data shape is expected to be (number of observations, number of features) = (400, 1936)
+def get_predictions_svm_method(train_data, test_data, kernel_type='linear'):
+    '''''''''
+    Takes 2 torch tensors: train_data and test_data, each of which have 
+    '''
+    clf = SVC(kernel=kernel_type, C=1.0)
 
-#todo: SVM with linear, hingeloss and Gaussian
-def SVM(data, kernel, gamma=0.1):
-    # Replace the 0 labels with -1 labels
-    data = replace_0_labels_with_negative_1(data)
+    # Prepare data for training
+    train_data_wo_bias_and_label = get_data_without_bias_and_label(train_data)
+    training_labels = get_label(train_data)
+    training_labels = replace_0s_with_neg_1(training_labels)
 
-    # Apply kernel trick to get K
-    # if the kernel is linear, K has the shape (number of observations, 1)
-    K = kernel(data)
+    # Train
+    clf.fit(train_data_wo_bias_and_label, training_labels)
 
-    # Solve for alpha
+    # Prepare data for testing
+    test_data_wo_bias_and_label = get_data_without_bias_and_label(test_data)
 
-    return 0
+    # Get predictions
+    y_pred = clf.predict(test_data_wo_bias_and_label)
+    y_pred = torch.from_numpy(y_pred)
+    y_pred = replace_neg_1s_with_0(y_pred)
 
-def replace_0_labels_with_negative_1(raw_data):
-    '''''''''''
-    Takes data(torch tensor) of shape (number of observations, number 0f features + 1), where the last column is the 
-    label column.
-    
-    Returns data where the 0 labels are changed to -1.
-    '''''
-    num_features = raw_data.shape[1] - 1
-    label = raw_data[:, num_features]
-    label = torch.where(label == 0, -1, label)
-    raw_data[:, num_features - 1] = label
-    return raw_data
+    return y_pred
 
-def Gaussian_kernel(data, gamma=0.1):
-    #todo
-    return 0
+def replace_neg_1s_with_0(pred):
+    pred = torch.where(pred == -1, 0, pred)
+    return pred
 
-def linear_kernel(data, has_bias=True):
-    '''''''''''
-    Takes data(torch tensor) of shape (number of observations, number 0f features + 1), where the last column is the 
-    label column.
-    
-    For each data point, linear_kernel(data_pt) = dot(data_pt, 1) 
+def get_label(data):
+    '''''''''
+    Takes out the last column, which is the label col, from the data(torch tensor)
     '''
     num_features = data.shape[1] - 1
-    if has_bias:
-        data = data[:, 1 : num_features] # bias has to be removed
-    else:
-        data = data[:, 0 : num_features]
-    res = torch.sum(data, dim=1, keepdim=True) # has shape (number of observations, 1)
-    return res
+    label = data[:, num_features]
+    return label
 
-def compute_weights():
-    #todo
-    return 0
+def get_data_without_bias_and_label(data):
+    '''''''''
+    Removes the labels and bias cols from data(torch tensor)
+    '''
+    num_features = data.shape[1] - 1
+    data = data[:, 1 : num_features]
+    return data
 
-def solve_for_alpha():
-    #todo
-    return 0
+def replace_0s_with_neg_1(label):
+    '''''''''
+    Takes the label col and replaces 0s with -1
+    '''
+    label = torch.where(label == 0, -1, label)
+    return label
 
-def predict(data):
-    #todo
+def main():
     return 0
