@@ -115,7 +115,7 @@ def get_features_with_sufficient_var(data, threshold_var=0.01):
     Takes in data that has been reconstructed after PCA and the threshold variance. Is a torch tensor has 
     shape (number of observations, number of features)
 
-    Returns the indices of the features kept, based on whether variance of feature >= threshold_var.
+    Returns the indices of the features kept, based on whether variance of feature >= threshold_var. Is a torch tensor
     '''
     variance_feature_wise = torch.var(data, dim=0)
     num_features = data.shape[1]
@@ -180,6 +180,8 @@ def pick_observations_and_features(data, rows_to_remove, cols_to_keep):
     '''''''''''
     Takes data(torch tensor), which is of shape (number of observations, number of features), rows_to_remove(np array)
     and cols_to_keep(torch tensor)
+    
+    Note: done before labels and bias col have been added
 
     Returns data, with relevant rows removed and features kept, as a torch tensor
     '''
@@ -196,13 +198,39 @@ def pick_observations_and_features(data, rows_to_remove, cols_to_keep):
         data = data[:, cols_to_keep]
     return data
 
+def process_test_and_training_data_no_pca(raw_data_1, raw_data_2, sample_size=200):
+    num_features = raw_data_1.shape[1]
+    num_data_pts_1 = raw_data_1.shape[0]
+    num_data_pts_2 = raw_data_2.shape[0]
+
+    np.random.seed(46)
+    random_indices_train_data_1 = np.random.choice(num_data_pts_1, sample_size, replace=False)
+    train_data_1 = raw_data_1[random_indices_train_data_1]
+    random_indices_train_data_2 = np.random.choice(num_data_pts_2, sample_size, replace=False)
+    train_data_2 = raw_data_2[random_indices_train_data_2]
+
+    combined_training_data = torch.vstack((train_data_1, train_data_2))
+    combined_training_data = normalise_data_min_max(combined_training_data)
+    combined_training_data = add_bias_and_label(combined_training_data, num_data_pts_1)
+
+    cols_to_keep = torch.arange(num_features) # keep all features
+    rows_to_remove_1 = random_indices_train_data_1
+    test_data_1 = pick_observations_and_features(combined_training_data, rows_to_remove_1, cols_to_keep)
+    rows_to_remove_2 = random_indices_train_data_2
+    test_data_2 = pick_observations_and_features(test_data_1, rows_to_remove_2, cols_to_keep)
+
+    num_test_data_pts_1 = test_data_1.shape[0]
+    num_test_data_pts_2 = test_data_2.shape[0]
+    combined_test_data = stack_and_label_data(test_data_1, test_data_2, num_test_data_pts_1, num_test_data_pts_2, normalised=True)
+
+    return combined_training_data, combined_test_data
 
 def process_test_and_training_data_in_batches(raw_data_1, raw_data_2, sample_size=200):
     '''''''''
     Takes in 2 matrices, each of which is a numpy array of shape (num data points, num features). Note that num columns 
     must be the same for each matrix.
 
-    Note that raw_data_1 will have the label of 0 and raw_data_2 will have the label of 1.
+    Note: raw_data_1 will have the label of 0 and raw_data_2 will have the label of 1. A bias column is also added.
 
     WARNING: Data shape may change with different runs
 
@@ -258,7 +286,7 @@ def process_test_and_training_data_in_batches(raw_data_1, raw_data_2, sample_siz
 
     # Find the indices of the features that display little variance across samples, threshold_var is 0.01 if not declared otherwise
     indices_with_sufficiently_large_variance = get_features_with_sufficient_var(processed_training_data,
-                                                                                threshold_var=0.035)
+                                                                                threshold_var=0.04)
 
     # Process training data by removing irrelevant features, adding bias col and label col
     processed_training_data = processed_training_data[:, indices_with_sufficiently_large_variance]
@@ -293,12 +321,12 @@ def main():
 
     training_data_to_save = PvNormalDataTrain.numpy()
     testing_data_to_save = PvNormalDataTest.numpy()
-    np.save("../ProcessedData/TestSet/PvNormalDataNormalised_var0.035", training_data_to_save)
-    np.save("../ProcessedData/TrainingSet/PvNormalDataNormalised_var0.035", testing_data_to_save)
+    np.save("../ProcessedData/TestSet/PvNormalDataNormalised_var0.04", training_data_to_save)
+    np.save("../ProcessedData/TrainingSet/PvNormalDataNormalised_var0.04", testing_data_to_save)
 
 """""""""
 Keep 0.02 variance -> 16% reduction in features, test_data_shape: (3202, 54984), training_data_shape: (400, 54984)
-Keep 0.04 variance -> 73% reduction in features, test_data_shape: (3202, 2), training_data_shape: (400, 2) 
+Keep 0.04 variance -> 73% reduction in features, test_data_shape: (3202, 17247), training_data_shape: (400, 17247) 
 Keep 0.025 variance -> 27% reduction in features, test_data_shape: (3202, 47863), training_data_shape: (400, 47863)
 Keep 0.03 variance -> 42% reduction in features, test_data_shape: (3202, 37398), training_data_shape: (400, 37398)
 Keep 0.035 variance -> 60% reduction in features, test_data_shape: (3202, 26113), training_data_shape: (400, 26113)

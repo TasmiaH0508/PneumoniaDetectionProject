@@ -16,3 +16,6 @@ test_arr = np.array([[1, 3, 8, 1],
                      [1, 4, 1000, 1]])
 
 test_arr = torch.from_numpy(test_arr)
+
+arr = np.load("../ProcessedData/TestSet/PvNormalDataNormalised_var0.035.npy")
+print("Found")
