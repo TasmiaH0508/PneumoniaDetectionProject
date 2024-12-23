@@ -1,14 +1,15 @@
 from sklearn.svm import SVC
 import torch
+from PrepareData import *
 from ComputeMetrics import *
 import time
 import numpy as np
 
-def get_predictions_svm_method(train_data, test_data, kernel_type='linear'):
-    '''''''''
+def get_predictions_svm_method(train_data, test_data, kernel_type='linear', C=1.0):
+    '''''
     Takes 2 torch tensors: train_data and test_data and kernel choice
     '''
-    clf = SVC(kernel=kernel_type, C=1.0)
+    clf = SVC(kernel=kernel_type, C=C)
 
     # prepare data for training
     train_data_wo_bias_and_label = get_data_without_bias_and_label(train_data)
@@ -36,41 +37,30 @@ def replace_neg_1s_with_0(pred):
     pred = torch.where(pred == -1, 0, pred)
     return pred
 
-def get_label(data):
-    '''''''''
-    Takes out the last column, which is the label col, from the data(torch tensor)
-    '''
-    num_features = data.shape[1] - 1
-    label = data[:, num_features]
-    return label
-
-def get_data_without_bias_and_label(data):
-    '''''''''
-    Removes the labels and bias cols from data(torch tensor)
-    '''
-    num_features = data.shape[1] - 1
-    data = data[:, 1 : num_features]
-    return data
-
 def replace_0s_with_neg_1(label):
-    '''''''''
+    ''''
     Takes the label col and replaces 0s with -1
     '''
     label = torch.where(label == 0, -1, label)
     return label
 
+def get_best_hyperparameters():
+    ''''
+    There are 2 hyperparameters: C(regularization parameter), data variance and kernel choice
+    '''
+    return 0
+
 def main():
-    # work with data with 0.035 variance and linear kernel
     start = time.time()
 
     # the labels are 1 if pneumonia is present and 0 otherwise
-    test_data = np.load("../ProcessedData/TestSet/PvNormalDataNormalised_var0.035.npy")
-    train_data = np.load("../ProcessedData/TrainingSet/PvNormalDataNormalised_var0.035.npy")
+    test_data = np.load("../ProcessedRawData/TestSet/PvNormalDataNormalised_var0.02.npy")
+    train_data = np.load("../ProcessedRawData/TrainingSet/PvNormalDataNormalised_var0.02.npy")
 
     test_data = torch.from_numpy(test_data)
     train_data = torch.from_numpy(train_data)
 
-    y_pred_linear_kernel = get_predictions_svm_method(train_data, test_data)
+    y_pred_linear_kernel = get_predictions_svm_method(train_data, test_data, kernel_type='rbf', C=1.0)
     actual_labels = get_label(test_data)
     acc = get_accuracy(actual_labels, y_pred_linear_kernel)
 
@@ -78,14 +68,24 @@ def main():
 
     print("The accuracy(in %) is:", acc)
 
-    print("Time taken:", end - start)
+    print("Time taken(in s):", end - start)
 
 main()
 
 """""""""
+Linear kernel
+For c = 1.0
 0.04 var, 17246 features -> 92.75% accuracy
 0.035 var, 26112 features -> 93.0% accuracy
 0.03 var, 37397 features -> 92.75% accuracy
 0.025 var, 47862 features -> 93.75% accuracy
 0.02 var, 54983 features -> 92% accuracy
+
+Gaussian kernel
+For c = 1.0
+0.04 var, 17246 features -> 93.0% accuracy
+0.035 var, 26112 features -> 93.5% accuracy
+0.03 var, 37397 features -> 94.25% accuracy
+0.025 var, 47862 features -> 94.5% accuracy
+0.02 var, 54983 features -> 94.25% accuracy
 """""

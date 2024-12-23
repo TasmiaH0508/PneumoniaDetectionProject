@@ -1,48 +1,37 @@
 import torch
-from torch import nn
-import numpy as np
+import torch.nn as nn
 
-device = (
-    "cuda"
-    if torch.cuda.is_available()
-    else "mps"
-    if torch.backends.mps.is_available()
-    else "cpu"
-)
+train_arr = torch.asarray([[1, 10, 20, 30, 0],
+                           [1, 15, 15, 90, 1],
+                           [1, 20, 15, 120, 1]])
 
-print(f"Using {device} device")
+test_arr = torch.asarray([[1, 10, 20, 130, 1]])
 
 class NeuralNetwork(nn.Module):
-    def __init__(self, num_input_features):
-        # WARNING: input size may change with different runs of PCA
-        super().__init__()
-        self.L1 = nn.Linear(num_input_features, 968, bias=False)
-        self.L2 = nn.LeakyReLU(negative_slope=0.2)
-        self.L3 = nn.Linear(968, 242)
-        self.L4 = nn.LeakyReLU(negative_slope=0.2)
-        self.L5 = nn.Linear(242, 24)
-        self.L6 = nn.LeakyReLU(negative_slope=0.2)
-        self.L7 = nn.Linear(24, 1)
-        self.L8 = nn.Sigmoid()
+    def __init__(self):
+        super(NeuralNetwork, self).__init__()
+        self.L1 = nn.Linear(4, 2)
+        self.L2 = nn.LeakyReLU(0.3)
+        self.L3 = nn.Linear(2, 1)
+        self.L4 = nn.Sigmoid()
 
     def forward(self, x):
         x = self.L1(x)
         x = self.L2(x)
         x = self.L3(x)
         x = self.L4(x)
-        x = self.L5(x)
-        x = self.L6(x)
-        x = self.L7(x)
-        x = self.L8(x)
         return x
+
+model = NeuralNetwork()
+
 
 def train_model(epochs, data_without_label, label, optimiser, save_weights=True, use_old_weights=False):
     '''''''''
     Trains neural network with given parameters.
-    
+
     If save_weights=False, the weights will not be saved to an external file and the weights generated cannot be 
     used in future to train model further.
-    
+
     If use_old_weights=False, the model will not use the weights previously generated for learning
     '''
     if use_old_weights:
@@ -55,16 +44,13 @@ def train_model(epochs, data_without_label, label, optimiser, save_weights=True,
     loss_fn = nn.BCELoss()
     for i in range(epochs):
         optimiser.zero_grad()
-        y_pred = model(data_without_label) # compute the value of y_hat (not the same as the expected label)
-        loss = loss_fn(y_pred, label) # compute loss
+        y_pred = model(data_without_label)  # compute the value of y_hat (not the same as the expected label)
+        loss = loss_fn(y_pred, label)  # compute loss
         # perform back propagation (computes partial derivatives of loss with respect to weights for optimisation):
         loss.backward()
         optimiser.step()
 
     if save_weights:
         weights = model.state_dict()
-        torch.save(weights, "./torch_weights.pth") # overwrites old weights with new weights
+        torch.save(weights, "./torch_weights.pth")  # overwrites old weights with new weights
 
-def predict(data_without_label, threshold_probability):
-    #todo
-    return 0

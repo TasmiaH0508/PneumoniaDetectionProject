@@ -198,33 +198,6 @@ def pick_observations_and_features(data, rows_to_remove, cols_to_keep):
         data = data[:, cols_to_keep]
     return data
 
-def process_test_and_training_data_no_pca(raw_data_1, raw_data_2, sample_size=200):
-    num_features = raw_data_1.shape[1]
-    num_data_pts_1 = raw_data_1.shape[0]
-    num_data_pts_2 = raw_data_2.shape[0]
-
-    np.random.seed(46)
-    random_indices_train_data_1 = np.random.choice(num_data_pts_1, sample_size, replace=False)
-    train_data_1 = raw_data_1[random_indices_train_data_1]
-    random_indices_train_data_2 = np.random.choice(num_data_pts_2, sample_size, replace=False)
-    train_data_2 = raw_data_2[random_indices_train_data_2]
-
-    combined_training_data = torch.vstack((train_data_1, train_data_2))
-    combined_training_data = normalise_data_min_max(combined_training_data)
-    combined_training_data = add_bias_and_label(combined_training_data, num_data_pts_1)
-
-    cols_to_keep = torch.arange(num_features) # keep all features
-    rows_to_remove_1 = random_indices_train_data_1
-    test_data_1 = pick_observations_and_features(combined_training_data, rows_to_remove_1, cols_to_keep)
-    rows_to_remove_2 = random_indices_train_data_2
-    test_data_2 = pick_observations_and_features(test_data_1, rows_to_remove_2, cols_to_keep)
-
-    num_test_data_pts_1 = test_data_1.shape[0]
-    num_test_data_pts_2 = test_data_2.shape[0]
-    combined_test_data = stack_and_label_data(test_data_1, test_data_2, num_test_data_pts_1, num_test_data_pts_2, normalised=True)
-
-    return combined_training_data, combined_test_data
-
 def process_test_and_training_data_in_batches(raw_data_1, raw_data_2, sample_size=200):
     '''''''''
     Takes in 2 matrices, each of which is a numpy array of shape (num data points, num features). Note that num columns 
@@ -321,8 +294,8 @@ def main():
 
     training_data_to_save = PvNormalDataTrain.numpy()
     testing_data_to_save = PvNormalDataTest.numpy()
-    np.save("../ProcessedData/TestSet/PvNormalDataNormalised_var0.04", training_data_to_save)
-    np.save("../ProcessedData/TrainingSet/PvNormalDataNormalised_var0.04", testing_data_to_save)
+    np.save("../ProcessedRawData/TestSet/PvNormalDataNormalised_var0.04", training_data_to_save)
+    np.save("../ProcessedRawData/TrainingSet/PvNormalDataNormalised_var0.04", testing_data_to_save)
 
 """""""""
 Keep 0.02 variance -> 16% reduction in features, test_data_shape: (3202, 54984), training_data_shape: (400, 54984)

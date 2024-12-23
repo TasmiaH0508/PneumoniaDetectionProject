@@ -1,4 +1,4 @@
-# Goal
+# Goal of Project
 Train an image classifier that can distinguish x-ray photographs of patients with pneumonia 
 and those without.
 
@@ -26,18 +26,32 @@ Pneumonia.
 
 Table showing the percentage reduction in features by varying the variance of features:
 
-Feature-wise variance maintained | 0.02 | 0.025 | 0.03 | 0.035 | 0.04 | 1 (i.e. No PCA applied) |
---- |----|-------|------|-------|------|-------------------------|
-Percentage reduction in features | 16 | 27    | 42   | 60    | 73   |                         |
+Feature-wise variance maintained | 0.02 | 0.025 | 0.03 | 0.035 | 0.04 |
+--- |----|-------|------|-------|------|
+Percentage reduction in features | 16 | 27    | 42   | 60    | 73   |
 
 ### Results Evaluation
 
 ### SVM
 
-Due to the large number of features, a linear kernel was used and a high accuracy of at least 92% was achieved.
+Two kinds of kernels were used: Gaussian and Linear.
 
-Feature-wise variance maintained | 0.02 | 0.025 | 0.03  | 0.035 | 0.04  | No PCA Applied|
---- |------|-------|-------|-------|-------|----|
-Accuracy | 92   | 93.75 | 92.75 | 93    | 92.75 | |
+For the linear kernel and regularisation param c = 1.0:
+
+Feature-wise variance maintained| 0.02 | 0.025 | 0.03  | 0.035 | 0.04  |
+--- |------|-------|-------|-------|-------|
+Accuracy | 92   | 93.75 | 92.75 | 93    | 92.75 |
+
+For the Gaussian kernel and regularisation param c = 1.0:
+
+Feature-wise variance maintained| 0.02  | 0.025 | 0.03  | 0.035 | 0.04 |
+--- |-------|-------|-------|-------|------|
+Accuracy | 94.25 | 94.5  | 94.25 | 93.5  | 93.0 |
+
+#todo: maybe use confusion matrix
 
 ### Neural Network
+
+### CNN
+
+### Standard Logistic Regression
