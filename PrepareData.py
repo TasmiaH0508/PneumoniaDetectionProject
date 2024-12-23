@@ -1,9 +1,13 @@
-def get_data_without_bias_and_label(data):
+def get_data_without_bias_and_label(data, has_bias=True):
     ''''
-    Removes the labels and bias cols from data(torch tensor)
+    Removes the labels from data(torch tensor)
+    Bias col is removed if present, as indicated by has_bias
     '''
     num_features = data.shape[1] - 1
-    data = data[:, 1 : num_features]
+    if has_bias:
+        data = data[:, 1: num_features]
+    else:
+        data = data[:, 0: num_features]
     return data
 
 def get_label(data):

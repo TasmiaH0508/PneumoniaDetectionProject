@@ -1,6 +1,8 @@
 import torch
 from torch import nn
 import numpy as np
+from PrepareData import *
+from ComputeMetrics import *
 
 device = (
     "cuda"
@@ -13,10 +15,10 @@ device = (
 print(f"Using {device} device")
 
 class NeuralNetwork(nn.Module):
-    def __init__(self, num_input_features):
-        # WARNING: input size may change with different runs of PCA
+    def __init__(self, num_input_features=1000):
         super().__init__()
-        self.L1 = nn.Linear(num_input_features, 968, bias=False)
+        self.num_input_features = num_input_features
+        self.L1 = nn.Linear(num_input_features, 968)
         self.L2 = nn.LeakyReLU(negative_slope=0.2)
         self.L3 = nn.Linear(968, 242)
         self.L4 = nn.LeakyReLU(negative_slope=0.2)
@@ -36,35 +38,52 @@ class NeuralNetwork(nn.Module):
         x = self.L8(x)
         return x
 
-def train_model(epochs, data_without_label, label, optimiser, save_weights=True, use_old_weights=False):
+def train_model(model, epochs, train_data, optimiser, bias_present=True, use_old_weights=False, save_weights=True):
     '''''''''
-    Trains neural network with given parameters.
     
-    If save_weights=False, the weights will not be saved to an external file and the weights generated cannot be 
-    used in future to train model further.
-    
-    If use_old_weights=False, the model will not use the weights previously generated for learning
     '''
+    # prepare data
+    train_labels = get_label(train_data)
+    train_data = get_data_without_bias_and_label(train_data, has_bias=bias_present)
+    num_features = train_data.shape[1]
+
+    model.num_input_features = num_features
+
     if use_old_weights:
         try:
-            state_dict = torch.load("./torch_weights.pth", weights_only=True)
+            state_dict = torch.load("torch_weights.pth", weights_only=True)
             model.load_state_dict(state_dict)
         except FileNotFoundError:
-            print("File not found, old weights cannot be used. Training new model...")
+            print("File not found, old weights cannot be used.")
 
-    loss_fn = nn.BCELoss()
+    # train
+    loss = nn.BCELoss()
     for i in range(epochs):
         optimiser.zero_grad()
-        y_pred = model(data_without_label) # compute the value of y_hat (not the same as the expected label)
-        loss = loss_fn(y_pred, label) # compute loss
-        # perform back propagation (computes partial derivatives of loss with respect to weights for optimisation):
-        loss.backward()
+        y_pred = model.forward(train_data)
+        loss_val = loss(y_pred, train_labels)
+        loss_val.backward()
         optimiser.step()
 
     if save_weights:
         weights = model.state_dict()
-        torch.save(weights, "./torch_weights.pth") # overwrites old weights with new weights
+        torch.save(weights, "./torch_weights.pth")  # overwrites old weights with new weights
 
-def predict(data_without_label, threshold_probability):
+def predict(model, threshold_prob, test_data, bias_present=True):
+    '''''''''
+    Weights need to be saved before predicting
+    '''''
+    try:
+        state_dict = torch.load("torch_weights.pth", weights_only=True)
+        model.load_state_dict(state_dict)
+        test_data = get_data_without_bias_and_label(test_data, has_bias=bias_present)
+        pred = model.forward(test_data)
+        pred = torch.where(pred >= threshold_prob, 1, 0)
+        return pred
+    except FileNotFoundError:
+        print("File not found, cannot predict.")
+
+def main():
     #todo
-    return 0
+
+#main()
