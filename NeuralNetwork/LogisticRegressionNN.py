@@ -1,6 +1,7 @@
 import torch
 from torch import nn
 import numpy as np
+import time
 from PrepareData import *
 from ComputeMetrics import *
 
@@ -20,10 +21,10 @@ class NeuralNetwork(nn.Module):
         self.num_input_features = num_input_features
         self.L1 = nn.Linear(num_input_features, 968)
         self.L2 = nn.LeakyReLU(negative_slope=0.2)
-        self.L3 = nn.Linear(968, 242)
+        self.L3 = nn.Linear(968, 242) # think about matrices and their shapes
         self.L4 = nn.LeakyReLU(negative_slope=0.2)
         self.L5 = nn.Linear(242, 24)
-        self.L6 = nn.LeakyReLU(negative_slope=0.2)
+        self.L6 = nn.ReLU()
         self.L7 = nn.Linear(24, 1)
         self.L8 = nn.Sigmoid()
 
@@ -38,20 +39,18 @@ class NeuralNetwork(nn.Module):
         x = self.L8(x)
         return x
 
-def train_model(model, epochs, train_data, optimiser, bias_present=True, use_old_weights=False, save_weights=True):
+def train_model(model, epochs, train_data, optimiser, bias_present=True, use_old_weights=False, save_weights=True, file_name_to_read_from="./torch_weights.pth", file_name_to_write_to="./torch_weights.pth"):
     '''''''''
-    
+    Todo
     '''
     # prepare data
     train_labels = get_label(train_data)
+    train_labels = torch.reshape(train_labels, (train_labels.shape[0],1))
     train_data = get_data_without_bias_and_label(train_data, has_bias=bias_present)
-    num_features = train_data.shape[1]
-
-    model.num_input_features = num_features
 
     if use_old_weights:
         try:
-            state_dict = torch.load("torch_weights.pth", weights_only=True)
+            state_dict = torch.load(file_name_to_read_from, weights_only=True)
             model.load_state_dict(state_dict)
         except FileNotFoundError:
             print("File not found, old weights cannot be used.")
@@ -67,23 +66,62 @@ def train_model(model, epochs, train_data, optimiser, bias_present=True, use_old
 
     if save_weights:
         weights = model.state_dict()
-        torch.save(weights, "./torch_weights.pth")  # overwrites old weights with new weights
+        torch.save(weights, file_name_to_write_to)  # overwrites old weights with new weights
 
 def predict(model, threshold_prob, test_data, bias_present=True):
+    ''''''''''
+    Todo
     '''''''''
-    Weights need to be saved before predicting
-    '''''
+    test_data = get_data_without_bias_and_label(test_data, has_bias=bias_present)
+    print("These are the current weights being used by the model:", model.state_dict())
+    pred = model.forward(test_data)
+    pred = torch.where(pred >= threshold_prob, 1, 0)
+    return pred
+
+def predict_with_saved_weights(model, test_data, threshold, filename, has_bias=True):
     try:
-        state_dict = torch.load("torch_weights.pth", weights_only=True)
-        model.load_state_dict(state_dict)
-        test_data = get_data_without_bias_and_label(test_data, has_bias=bias_present)
+        weights = torch.load(filename)
+        model.load_state_dict(weights)
+        test_data = get_data_without_bias_and_label(test_data, has_bias=True)
         pred = model.forward(test_data)
-        pred = torch.where(pred >= threshold_prob, 1, 0)
+        pred = torch.where(pred >= threshold, 1, 0)
         return pred
     except FileNotFoundError:
-        print("File not found, cannot predict.")
+        print("File not found, weights cannot be used.")
+
+def get_best_hyperparameters(model, test_data, bias_present=True):
+    #todo
+    return 0
 
 def main():
-    #todo
+    start = time.time()
+    # prepare training data
+    train_data = np.load("../ProcessedRawData/TrainingSet/PvNormalDataNormalised_var0.03.npy")
+    #print(train_data.shape)
+    train_data = torch.from_numpy(train_data).float()
+    num_features_excluding_bias = train_data.shape[1] - 2 # since the last col is the label and the first is the bias
 
-#main()
+    # prepare test data
+    test_data = np.load("../ProcessedRawData/TestSet/PvNormalDataNormalised_var0.03.npy")
+    test_data = torch.from_numpy(test_data).float()
+    #print(test_data.shape)
+
+    # instantiate model to pass into relevant functions
+    model = NeuralNetwork(num_features_excluding_bias)
+
+    # train the model
+    optimiser = torch.optim.Adam(model.parameters(), lr=0.001)
+    train_model(model, 400, train_data, optimiser, bias_present=True, use_old_weights=False, save_weights=True)
+    print("Model has been trained")
+
+    # get predictions on test data
+    predictions = predict(model, 0.5, test_data, bias_present=True)
+
+    # get accuracy
+    actual_test_labels = get_label(test_data)
+    print("The accuracy of the model is:", get_accuracy(actual_test_labels, predictions))
+
+    end = time.time()
+    print("Time taken in seconds:", end - start)
+
+main()

@@ -294,8 +294,8 @@ def main():
 
     training_data_to_save = PvNormalDataTrain.numpy()
     testing_data_to_save = PvNormalDataTest.numpy()
-    np.save("../ProcessedRawData/TestSet/PvNormalDataNormalised_var0.04", training_data_to_save)
-    np.save("../ProcessedRawData/TrainingSet/PvNormalDataNormalised_var0.04", testing_data_to_save)
+    np.save("../ProcessedRawData/TrainingSet/PvNormalDataNormalised_var0.04", training_data_to_save)
+    np.save("../ProcessedRawData/TestSet/PvNormalDataNormalised_var0.04", testing_data_to_save)
 
 """""""""
 Keep 0.02 variance -> 16% reduction in features, test_data_shape: (3202, 54984), training_data_shape: (400, 54984)

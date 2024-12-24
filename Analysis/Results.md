@@ -38,17 +38,17 @@ Two kinds of kernels were used: Gaussian and Linear.
 
 For the linear kernel and regularisation param c = 1.0:
 
-Feature-wise variance maintained| 0.02 | 0.025 | 0.03  | 0.035 | 0.04  |
---- |------|-------|-------|-------|-------|
-Accuracy | 92   | 93.75 | 92.75 | 93    | 92.75 |
+Feature-wise variance maintained | 0.02 | 0.025 | 0.03 | 0.035 | 0.04 |
+--- |----|-------|------|-------|------|
+Percentage accuracy | 91.2 | 90.9    | 90.4   | 89.6    | 88.2   |
 
 For the Gaussian kernel and regularisation param c = 1.0:
 
-Feature-wise variance maintained| 0.02  | 0.025 | 0.03  | 0.035 | 0.04 |
---- |-------|-------|-------|-------|------|
-Accuracy | 94.25 | 94.5  | 94.25 | 93.5  | 93.0 |
+Feature-wise variance maintained | 0.02 | 0.025 | 0.03 | 0.035 | 0.04 |
+--- |------|-------|------|-------|------|
+Percentage accuracy | 91.8 | 91.7  | 91.6 | 91.1  | 90.0 |
 
-#todo: maybe use confusion matrix
+#todo: maybe use confusion matrix do deduce which is the best model based on recall/precision
 
 ### Neural Network
 

@@ -55,12 +55,14 @@ def main():
 
     # the labels are 1 if pneumonia is present and 0 otherwise
     test_data = np.load("../ProcessedRawData/TestSet/PvNormalDataNormalised_var0.02.npy")
+    print(test_data.shape)
     train_data = np.load("../ProcessedRawData/TrainingSet/PvNormalDataNormalised_var0.02.npy")
+    print(train_data.shape)
 
     test_data = torch.from_numpy(test_data)
     train_data = torch.from_numpy(train_data)
 
-    y_pred_linear_kernel = get_predictions_svm_method(train_data, test_data, kernel_type='rbf', C=1.0)
+    y_pred_linear_kernel = get_predictions_svm_method(train_data, test_data, kernel_type='linear', C=0.5)
     actual_labels = get_label(test_data)
     acc = get_accuracy(actual_labels, y_pred_linear_kernel)
 
@@ -75,17 +77,22 @@ main()
 """""""""
 Linear kernel
 For c = 1.0
-0.04 var, 17246 features -> 92.75% accuracy
-0.035 var, 26112 features -> 93.0% accuracy
-0.03 var, 37397 features -> 92.75% accuracy
-0.025 var, 47862 features -> 93.75% accuracy
-0.02 var, 54983 features -> 92% accuracy
+0.04 var, 17246 features -> 88.2% accuracy
+0.035 var, 26112 features -> 89.6% accuracy
+0.03 var, 37397 features -> 90.4% accuracy
+0.025 var, 47862 features -> 90.9% accuracy
+0.02 var, 54983 features -> 91.2% accuracy
+
+For c = 1.5
+0.02 var, 54983 features -> 91.2% accuracy
+For c = 0.5
+0.02 var, 54983 features -> 91.2% accuracy
 
 Gaussian kernel
 For c = 1.0
-0.04 var, 17246 features -> 93.0% accuracy
-0.035 var, 26112 features -> 93.5% accuracy
-0.03 var, 37397 features -> 94.25% accuracy
-0.025 var, 47862 features -> 94.5% accuracy
-0.02 var, 54983 features -> 94.25% accuracy
+0.04 var, 17246 features -> 90.0% accuracy
+0.035 var, 26112 features -> 91.1% accuracy
+0.03 var, 37397 features -> 91.6% accuracy
+0.025 var, 47862 features -> 91.7% accuracy
+0.02 var, 54983 features -> 91.8% accuracy
 """""
