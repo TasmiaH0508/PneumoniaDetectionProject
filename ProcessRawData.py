@@ -5,16 +5,15 @@ from PIL import Image
 
 import torch
 
-P_folder = "../RawData/PNEUMONIA"
-NORMAL_folder_1 = "../RawData/NORMAL"
+P_folder = "./RawData/PNEUMONIA"
+NORMAL_folder_1 = "./RawData/NORMAL"
 target_size = (256, 256)
 
-
 def process_images(image_folder, target_size):
-    ''''''''''
+    ''''
     Takes a folder of '.png' images and returns a 2D np array, where the rows are the data points and 
     the columns are the features(ie has shape (num data points, num columns)), each of which maps to a pixel
-    '''''''''''
+    '''
     image_features = []
     for filename in os.listdir(image_folder):
         if filename.endswith(".png"):
@@ -37,12 +36,12 @@ def process_images(image_folder, target_size):
 
 
 def pca(data):
-    '''''''''''
+    ''''
     Takes a 2D torch array and returns a 2D torch array, with reduced number of features. The shape of the output 
     is (num data points, reduced number of features). Returns also the indices of the features kept.
 
     Data is expected to be normalised and of the type torch tensor.
-    '''''
+    '''
     data = data.T
     # data now has the shape (number of features, number of data points)
     num_data_points = data.shape[1]
@@ -64,12 +63,12 @@ def pca(data):
 
 
 def pca_with_batch_processing(data, batch_size=400):
-    '''''''''''
+    ''''
     Takes a 2D torch array and returns a 2D torch array, with reduced number of features. The shape of the output 
     is (num data points, reduced number of features). Returns also the indices of the features kept.
 
     Data is expected to be normalised and of the type torch tensor.
-    '''''
+    '''
     data = data.T  # has shape (number of data points, number of features)
     num_data_points = data.shape[1]
     num_features = data.shape[0]
@@ -97,11 +96,11 @@ def pca_with_batch_processing(data, batch_size=400):
 
 
 def normalise_data_min_max(data):
-    '''''
+    ''''
     Input is a data matrix of shape (number of observations, number of data points) and is a torch tensor
 
     Returns data of the same shape after min-max scaling. Data is a tensor
-    '''''''''
+    '''
     min_matrix = torch.min(data, dim=0)[0]
     max_matrix = torch.max(data, dim=0)[0]
     range_matrix = max_matrix - min_matrix
@@ -111,7 +110,7 @@ def normalise_data_min_max(data):
 
 
 def get_features_with_sufficient_var(data, threshold_var=0.01):
-    ''''''''''
+    ''''
     Takes in data that has been reconstructed after PCA and the threshold variance. Is a torch tensor has 
     shape (number of observations, number of features)
 
@@ -126,7 +125,7 @@ def get_features_with_sufficient_var(data, threshold_var=0.01):
 
 
 def stack_and_label_data(data_1, data_2, num_data_pts_1, num_data_pts_2, normalised=True, bias=True):
-    '''''''''''
+    ''''
     Stacks data_1 on top data_2. data_1 will have the label 0 and data_2 will have the label 1.
     Adds the bias col and label col.
     data_1 and data_2 are torch tensors.
@@ -154,7 +153,7 @@ def stack_and_label_data(data_1, data_2, num_data_pts_1, num_data_pts_2, normali
 
 
 def add_bias_and_label(data, num_zero_label):
-    '''''''''
+    ''''
     Note: Used for data that has been stacked beforehand
 
     Data has the shape of (total num of observations, features). Data is a torch tensor
@@ -177,7 +176,7 @@ def add_bias_and_label(data, num_zero_label):
 
 
 def pick_observations_and_features(data, rows_to_remove, cols_to_keep):
-    '''''''''''
+    ''''
     Takes data(torch tensor), which is of shape (number of observations, number of features), rows_to_remove(np array)
     and cols_to_keep(torch tensor)
     
@@ -198,10 +197,10 @@ def pick_observations_and_features(data, rows_to_remove, cols_to_keep):
         data = data[:, cols_to_keep]
     return data
 
-def process_test_and_training_data_in_batches(raw_data_1, raw_data_2, sample_size=200):
-    '''''''''
+def process_test_and_training_data_in_batches(raw_data_1, raw_data_2, var=0.04, sample_size=200, reduce_features=True):
+    ''''
     Takes in 2 matrices, each of which is a numpy array of shape (num data points, num features). Note that num columns 
-    must be the same for each matrix.
+    must be the same for each matrix. If reduce_features is set to False, pca is not applied. If var=0, no features are removed.
 
     Note: raw_data_1 will have the label of 0 and raw_data_2 will have the label of 1. A bias column is also added.
 
@@ -213,7 +212,7 @@ def process_test_and_training_data_in_batches(raw_data_1, raw_data_2, sample_siz
     3. Normalise the data. Perform PCA (on the test set only) and reconstruct the data
     4. Remove the features where there is very little variance and keep track of the indices removed
     5. Remove features from the test set
-    '''''''''''
+    '''
     raw_data_1 = torch.from_numpy(raw_data_1)
     raw_data_2 = torch.from_numpy(raw_data_2)
 
@@ -236,30 +235,34 @@ def process_test_and_training_data_in_batches(raw_data_1, raw_data_2, sample_siz
     joined_data = normalise_data_min_max(joined_training_data)
     print("Normalised training data, min-max scaled.")
 
-    data_chunks = []
-    i = 0
-    while i < number_of_features:
-        # pick 64 * 64 columns at one time
-        num_columns_to_pick = 64 * 64
-        if i + num_columns_to_pick > number_of_features:
-            data_to_add = joined_data[:, i: number_of_features]
-        else:
-            data_to_add = joined_data[:, i: i + num_columns_to_pick]
-        data_chunks.append(data_to_add)
-        i += num_columns_to_pick
+    if reduce_features:
+        data_chunks = []
+        i = 0
+        while i < number_of_features:
+            # pick 64 * 64 columns at one time
+            num_columns_to_pick = 64 * 64
+            if i + num_columns_to_pick > number_of_features:
+                data_to_add = joined_data[:, i: number_of_features]
+            else:
+                data_to_add = joined_data[:, i: i + num_columns_to_pick]
+            data_chunks.append(data_to_add)
+            i += num_columns_to_pick
 
-    processed_training_data = None
-    for data_chunk in data_chunks:
-        processed_data_chunk = pca_with_batch_processing(data_chunk)  # faster with batch processing
-        if processed_training_data is None:
-            processed_training_data = processed_data_chunk
-        else:
-            processed_training_data = torch.hstack((processed_training_data, processed_data_chunk))
-    print("PCA complete and Data reconstructed")
+        processed_training_data = None
+        for data_chunk in data_chunks:
+            processed_data_chunk = pca_with_batch_processing(data_chunk)  # faster with batch processing
+            if processed_training_data is None:
+                processed_training_data = processed_data_chunk
+            else:
+                processed_training_data = torch.hstack((processed_training_data, processed_data_chunk))
+        print("PCA complete and Data reconstructed")
 
-    # Find the indices of the features that display little variance across samples, threshold_var is 0.01 if not declared otherwise
-    indices_with_sufficiently_large_variance = get_features_with_sufficient_var(processed_training_data,
-                                                                                threshold_var=0.04)
+        # Find the indices of the features that display little variance across samples, threshold_var is 0.01 if not declared otherwise
+        indices_with_sufficiently_large_variance = get_features_with_sufficient_var(processed_training_data,
+                                                                                    threshold_var=var)
+    else:
+        processed_training_data = joined_data
+        indices_with_sufficiently_large_variance = get_features_with_sufficient_var(joined_data, threshold_var=var)
 
     # Process training data by removing irrelevant features, adding bias col and label col
     processed_training_data = processed_training_data[:, indices_with_sufficiently_large_variance]
@@ -280,9 +283,9 @@ def process_test_and_training_data_in_batches(raw_data_1, raw_data_2, sample_siz
     print("The shape of the training data is:", processed_training_data.shape)
     print("The shape of the test data is:", processed_test_data.shape)
     print("The number of features has been reduced by(in %):",
-          ((number_of_features - processed_training_data.shape[1]) / number_of_features) * 100)
+          ((number_of_features - (processed_training_data.shape[1] - 2)) / number_of_features) * 100)
 
-    return processed_training_data, processed_test_data  # both are tensors
+    return processed_training_data, processed_test_data, indices_with_sufficiently_large_variance  # all are tensors
 
 
 def main():
@@ -290,19 +293,14 @@ def main():
     raw_data_1 = process_images(NORMAL_folder_1, target_size)
     raw_data_2 = process_images(P_folder, target_size)
     # if pneumonia present, label is 1
-    PvNormalDataTrain, PvNormalDataTest = process_test_and_training_data_in_batches(raw_data_1, raw_data_2)
+    PvNormalDataTrain, PvNormalDataTest, indices_kept = process_test_and_training_data_in_batches(raw_data_1, raw_data_2, var=0.02, reduce_features=True)
 
     training_data_to_save = PvNormalDataTrain.numpy()
     testing_data_to_save = PvNormalDataTest.numpy()
-    np.save("../ProcessedRawData/TrainingSet/PvNormalDataNormalised_var0.04", training_data_to_save)
-    np.save("../ProcessedRawData/TestSet/PvNormalDataNormalised_var0.04", testing_data_to_save)
+    np.save("./ProcessedRawData/TrainingSet/PvNormalDataNormalised_var0.02", training_data_to_save)
+    np.save("./ProcessedRawData/TestSet/PvNormalDataNormalised_var0.02", testing_data_to_save)
+    # to use the indices, the images must be turned into arrays first and select the cols to keep using indices_kept.
+    # Then add in the bias. Add in the label if needed.
+    np.save("./ProcessedRawData/Index/Indices_Kept_data_var0.02", indices_kept)
 
-"""""""""
-Keep 0.02 variance -> 16% reduction in features, test_data_shape: (3202, 54984), training_data_shape: (400, 54984)
-Keep 0.04 variance -> 73% reduction in features, test_data_shape: (3202, 17247), training_data_shape: (400, 17247) 
-Keep 0.025 variance -> 27% reduction in features, test_data_shape: (3202, 47863), training_data_shape: (400, 47863)
-Keep 0.03 variance -> 42% reduction in features, test_data_shape: (3202, 37398), training_data_shape: (400, 37398)
-Keep 0.035 variance -> 60% reduction in features, test_data_shape: (3202, 26113), training_data_shape: (400, 26113)
-"""
-
-#main()
+main()

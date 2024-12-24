@@ -26,9 +26,10 @@ Pneumonia.
 
 Table showing the percentage reduction in features by varying the variance of features:
 
-Feature-wise variance maintained | 0.02 | 0.025 | 0.03 | 0.035 | 0.04 |
---- |----|-------|------|-------|------|
-Percentage reduction in features | 16 | 27    | 42   | 60    | 73   |
+Feature-wise variance maintained | 0.02  | 0.025 | 0.03  | 0.035 | 0.04  | All features maintained |
+--- |-------|-------|-------|-------|-------|-------------------------|
+Number of features | 54983 | 47862 | 37397 | 26112 | 17246 | 63335                   |
+Percentage reduction in features | 16    | 27    | 43    | 60    | 74    | 0                       |
 
 ### Results Evaluation
 
@@ -38,19 +39,25 @@ Two kinds of kernels were used: Gaussian and Linear.
 
 For the linear kernel and regularisation param c = 1.0:
 
-Feature-wise variance maintained | 0.02 | 0.025 | 0.03 | 0.035 | 0.04 |
---- |----|-------|------|-------|------|
-Percentage accuracy | 91.2 | 90.9    | 90.4   | 89.6    | 88.2   |
+Feature-wise variance maintained | 0.02 | 0.025 | 0.03 | 0.035 | 0.04 | All features maintained |
+--- |----|-------|------|-------|------|-------------------------|
+Percentage accuracy | 91.2 | 90.9    | 90.4   | 90.4  | 89.6 | 91                      |
 
 For the Gaussian kernel and regularisation param c = 1.0:
 
-Feature-wise variance maintained | 0.02 | 0.025 | 0.03 | 0.035 | 0.04 |
---- |------|-------|------|-------|------|
-Percentage accuracy | 91.8 | 91.7  | 91.6 | 91.1  | 90.0 |
+Feature-wise variance maintained | 0.02 | 0.025 | 0.03 | 0.035 | 0.04 | All features maintained |
+--- |------|-------|------|-------|------|-------------------------|
+Percentage accuracy | 91.8 | 91.7  | 91.6 | 91.1  | 90.0 | 91.7                    |
 
-#todo: maybe use confusion matrix do deduce which is the best model based on recall/precision
+For the predictions, we choose the model with the greatest accuracy.
 
 ### Neural Network
+
+Feature-wise variance maintained | 0.02 | 0.025 | 0.03    | 0.035 | 0.04 | All features maintained|
+--- |------|-------| ------  |-------|------| -----|
+Epochs || | 450     |  | | |
+Loss | |   | 0.00022 |   | | |
+Accuracy |  |  | 90.8    | | | |
 
 ### CNN
 
