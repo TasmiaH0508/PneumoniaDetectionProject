@@ -17,6 +17,3 @@ test_arr = np.array([[1, 3, 8, 1],
 
 test_arr = torch.from_numpy(test_arr)
 
-#model = SVMClassifier()
-#train_model(model, train_arr, has_bias=True, save_model=True)
-print(get_predictions_with_previously_loaded_model(test_arr, has_label=True))

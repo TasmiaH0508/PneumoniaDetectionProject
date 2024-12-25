@@ -9,6 +9,22 @@ P_folder = "./RawData/PNEUMONIA"
 NORMAL_folder_1 = "./RawData/NORMAL"
 target_size = (256, 256)
 
+def process_image(image_path):
+    ''''
+    Returns image as a torch tensor of shape (1, num_features) without any bias added.
+    '''
+    try:
+        image = Image.open(image_path).convert("L")
+        image = image.resize((256, 256))
+        image = np.array(image).flatten()
+        image = image / 255
+        image = torch.from_numpy(image).float()
+        num_features = image.shape[0]
+        image = torch.reshape(image, (1, num_features))
+        return image
+    except FileNotFoundError:
+        print("File not found")
+
 def process_images(image_folder, target_size):
     ''''
     Takes a folder of '.png' images and returns a 2D np array, where the rows are the data points and 
@@ -300,7 +316,5 @@ def main():
     np.save("./ProcessedRawData/TrainingSet/PvNormalDataNormalised_var0.02", training_data_to_save)
     np.save("./ProcessedRawData/TestSet/PvNormalDataNormalised_var0.02", testing_data_to_save)
     # to use the indices, the images must be turned into arrays first and select the cols to keep using indices_kept.
-    # Then add in the bias. Add in the label if needed.
+    # Then add in the bias if needed. Add in the label if needed.
     np.save("./ProcessedRawData/Index/Indices_Kept_data_var0.02", indices_kept)
-
-main()

@@ -53,11 +53,15 @@ For the predictions, we choose the model with the greatest accuracy.
 
 ### Neural Network
 
-Feature-wise variance maintained | 0.02 | 0.025 | 0.03    | 0.035 | 0.04 | All features maintained|
---- |------|-------| ------  |-------|------| -----|
-Epochs || | 450     |  | | |
-Loss | |   | 0.00022 |   | | |
-Accuracy |  |  | 90.8    | | | |
+Feature-wise variance maintained | 0.02   | 0.025  | 0.03   | 0.035  | 0.04   | All features maintained |
+--- |--------|--------|--------|--------|--------|-------------------------|
+Threshold | 0.65   | 0.65   | 0.65   | 0.65   | 0.65   | 0.65                    |
+Epochs(is a multiple of 50) | 350    | 350    | 350    | 400    | 400    | 350                     |
+Learning rate | 0.001  | 0.001  | 0.0015 | 0.0015 | 0.0015 | 0.001                   |
+Loss | 0.0006 | 0.0004 | 0.0007 | 0.0008 | 0.0001 | 0.001                   |
+Accuracy | 91.5   | 91.3   | 90.8   | 89.7   | 88.2   | 90.7                    |
+
+The chosen model here is the first model.
 
 ### CNN
 

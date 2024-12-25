@@ -3,3 +3,5 @@ RawData/
 ProcessedRawData/
 
 ComingSoon/
+
+NeuralNetwork/torch_weights_var_0.02.pth

@@ -11,7 +11,7 @@ class SVMClassifier:
     def __init__(self, kernel_type='linear', regularisation_param=1.0):
         self.clf = SVC(kernel=kernel_type, C=regularisation_param)
 
-def train_model(SVM_classifier, train_data, has_bias=True, save_model=False):
+def train_model(SVM_classifier, train_data, has_bias=True, save_model=False, file_to_save_to="svm_model.joblib"):
     ''''
     Takes a classifier instance and trains it on the training data.
     The training data must have the label col(which is taken to be the last col).
@@ -29,7 +29,7 @@ def train_model(SVM_classifier, train_data, has_bias=True, save_model=False):
     print("Trained model.")
 
     if save_model:
-        dump(clf, "svm_model.joblib")
+        dump(clf, file_to_save_to)
 
 def get_predictions(SVM_classifier, test_data, has_bias=True):
     ''''
@@ -43,10 +43,10 @@ def get_predictions(SVM_classifier, test_data, has_bias=True):
     y_pred = replace_neg_1s_with_0(y_pred)
     return y_pred
 
-def get_predictions_with_previously_loaded_model(test_data, has_bias=True, has_label=False):
+def get_predictions_with_previously_loaded_model(test_data, has_bias=True, has_label=False, file_to_read_from="svm_model.joblib"):
     ''''
     '''
-    loaded_model = joblib.load('svm_model.joblib')
+    loaded_model = joblib.load(file_to_read_from)
     test_data = get_data_without_bias_and_label(test_data, has_bias=has_bias, has_label=has_label)
     y_pred = loaded_model.predict(test_data)
     y_pred = torch.from_numpy(y_pred)
@@ -86,5 +86,3 @@ def main():
     print("The accuracy in % is:", get_accuracy(actual_labels, pred))
     end = time.time()
     print("Process took", end - start, "seconds.")
-
-main()
