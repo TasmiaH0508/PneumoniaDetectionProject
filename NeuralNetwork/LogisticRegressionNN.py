@@ -42,7 +42,7 @@ class NeuralNetwork(nn.Module):
 def train_model(model, epochs, train_data, optimiser, bias_present=True, use_old_weights=False, save_weights=True,
                 file_name_to_read_from="./torch_weights.pth", file_name_to_write_to="./torch_weights.pth"):
     '''''''''
-    Todo
+    To put inn description
     '''
     # prepare data
     train_labels = get_label(train_data)
@@ -80,11 +80,18 @@ def predict(model, threshold_prob, test_data, bias_present=True):
     pred = torch.where(pred >= threshold_prob, 1, 0)
     return pred
 
-def predict_with_saved_weights(model, test_data, threshold, filename, has_bias=True):
+def predict_with_saved_weights(test_data, threshold=0.65, has_bias=False, has_label=False, file_to_read_from="./torch_weights_var_0.02.pth"):
+    if has_bias:
+        num_input_features = test_data.shape[1] - 1
+    else:
+        num_input_features = test_data.shape[1]
+    if has_label:
+        num_input_features = num_input_features - 1
     try:
-        weights = torch.load(filename, weights_only=True)
+        model = NeuralNetwork(num_input_features=num_input_features)
+        weights = torch.load(file_to_read_from, weights_only=True)
         model.load_state_dict(weights)
-        test_data = get_data_without_bias_and_label(test_data, has_bias=has_bias)
+        test_data = get_data_without_bias_and_label(test_data, has_bias=has_bias, has_label=has_label)
         pred = model.forward(test_data)
         pred = torch.where(pred >= threshold, 1, 0)
         return pred
@@ -94,12 +101,12 @@ def predict_with_saved_weights(model, test_data, threshold, filename, has_bias=T
 def main():
     start = time.time()
     # prepare training data
-    train_data = np.load("../ProcessedRawData/TrainingSet/PvNormalDataNormalised_var0.04.npy")
+    train_data = np.load("../ProcessedRawData/TrainingSet/PvNormalDataNormalised_var0.025.npy")
     train_data = torch.from_numpy(train_data).float()
     num_features_excluding_bias = train_data.shape[1] - 2 # since the last col is the label and the first is the bias
 
     # prepare test data
-    test_data = np.load("../ProcessedRawData/TestSet/PvNormalDataNormalised_var0.04.npy")
+    test_data = np.load("../ProcessedRawData/TestSet/PvNormalDataNormalised_var0.025.npy")
     test_data = torch.from_numpy(test_data).float()
 
     # instantiate model to pass into relevant functions
@@ -107,7 +114,7 @@ def main():
 
     # train the model
     optimiser = torch.optim.Adam(model.parameters(), lr=0.001)
-    train_model(model, 400, train_data, optimiser, save_weights=True) # loss: 0.0007605944410897791
+    train_model(model, 350, train_data, optimiser, save_weights=True)
 
     print("Model has been trained")
 
@@ -119,7 +126,8 @@ def main():
     actual_test_labels = get_label(test_data)
     print("The accuracy of the model is:", get_accuracy(actual_test_labels, predictions))
 
+    # get recall
+    print("The recall of this model is:", get_recall(actual_test_labels, predictions))
+
     end = time.time()
     print("Time taken in seconds:", end - start)
-
-main()
