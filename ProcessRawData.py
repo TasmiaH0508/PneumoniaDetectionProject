@@ -115,15 +115,18 @@ def normalise_data_min_max(data):
     ''''
     Input is a data matrix of shape (number of observations, number of data points) and is a torch tensor
 
-    Returns data of the same shape after min-max scaling. Data is a tensor
+    Returns data(tensor) after min-max scaling, min matrix and range matrix for future computations.
     '''
     min_matrix = torch.min(data, dim=0)[0]
     max_matrix = torch.max(data, dim=0)[0]
     range_matrix = max_matrix - min_matrix
     range_matrix = torch.where(range_matrix == 0, 1, range_matrix)
     normalised_data = (data - min_matrix) / range_matrix
-    return normalised_data  # is a tensor
+    return normalised_data, min_matrix, range_matrix
 
+def min_max_normalise_with_predefined_params(data, min_matrix, range_matrix):
+    data = (data - min_matrix) / range_matrix
+    return data
 
 def get_features_with_sufficient_var(data, threshold_var=0.01):
     ''''
@@ -140,12 +143,14 @@ def get_features_with_sufficient_var(data, threshold_var=0.01):
     return indices_of_features_to_keep  # torch tensor
 
 
-def stack_and_label_data(data_1, data_2, num_data_pts_1, num_data_pts_2, normalised=True, bias=True):
+def stack_and_label_data(data_1, data_2, bias=True):
     ''''
     Stacks data_1 on top data_2. data_1 will have the label 0 and data_2 will have the label 1.
     Adds the bias col and label col.
     data_1 and data_2 are torch tensors.
     '''
+    num_data_pts_1 = data_1.shape[0]
+    num_data_pts_2 = data_2.shape[0]
     zeros_col = torch.zeros(num_data_pts_1)
     zeros_col = torch.reshape(zeros_col, (num_data_pts_1, 1))
     ones_col = torch.ones(num_data_pts_2)
@@ -153,9 +158,6 @@ def stack_and_label_data(data_1, data_2, num_data_pts_1, num_data_pts_2, normali
     label_col = torch.vstack((zeros_col, ones_col))
 
     joined_data = torch.vstack((data_1, data_2))
-
-    if normalised:
-        joined_data = normalise_data_min_max(joined_data)
 
     processed_data = torch.hstack((joined_data, label_col))
 
@@ -248,7 +250,7 @@ def process_test_and_training_data_in_batches(raw_data_1, raw_data_2, var=0.04, 
     print("Data joined with shape: ", joined_training_data.shape)
 
     # Normalisation should be done before PCA as PCA is sensitive to data with large ranges
-    joined_data = normalise_data_min_max(joined_training_data)
+    joined_data, min_matrix, range_matrix = normalise_data_min_max(joined_training_data)
     print("Normalised training data, min-max scaled.")
 
     if reduce_features:
@@ -284,24 +286,27 @@ def process_test_and_training_data_in_batches(raw_data_1, raw_data_2, var=0.04, 
     processed_training_data = processed_training_data[:, indices_with_sufficiently_large_variance]
     processed_training_data = add_bias_and_label(processed_training_data, sample_size)
 
-    # Process data for test set by taking only the relevant observations and columns/features
+    # Process data for test set by normalising the entire raw data set with the previously computed min and range matrices
+    # Then remove the features and data points(that are already present in the training set
+    raw_data_1 = min_max_normalise_with_predefined_params(raw_data_1, min_matrix, range_matrix)
+    raw_data_2 = min_max_normalise_with_predefined_params(raw_data_2, min_matrix, range_matrix)
     test_data_1 = pick_observations_and_features(raw_data_1, random_indices_1_train,
                                                  indices_with_sufficiently_large_variance)
     test_data_2 = pick_observations_and_features(raw_data_2, random_indices_2_train,
                                                  indices_with_sufficiently_large_variance)
+    print(test_data_1.shape)
+    print(test_data_2.shape)
 
-    number_of_data_pts_1_test = test_data_1.shape[0]
-    number_of_data_pts_2_test = test_data_2.shape[0]
     # Stack data, normalise, add bias col and label col
-    processed_test_data = stack_and_label_data(test_data_1, test_data_2, number_of_data_pts_1_test,
-                                               number_of_data_pts_2_test)
+    processed_test_data = stack_and_label_data(test_data_1, test_data_2)
 
     print("The shape of the training data is:", processed_training_data.shape)
     print("The shape of the test data is:", processed_test_data.shape)
     print("The number of features has been reduced by(in %):",
           ((number_of_features - (processed_training_data.shape[1] - 2)) / number_of_features) * 100)
 
-    return processed_training_data, processed_test_data, indices_with_sufficiently_large_variance  # all are tensors
+    # the mean and range matrices are calculated based on the training set
+    return processed_training_data, processed_test_data, indices_with_sufficiently_large_variance, min_matrix, range_matrix
 
 
 def main():
@@ -309,12 +314,14 @@ def main():
     raw_data_1 = process_images(NORMAL_folder_1, target_size)
     raw_data_2 = process_images(P_folder, target_size)
     # if pneumonia present, label is 1
-    PvNormalDataTrain, PvNormalDataTest, indices_kept = process_test_and_training_data_in_batches(raw_data_1, raw_data_2, var=0.02, reduce_features=True)
+    PvNormalDataTrain, PvNormalDataTest, indices_kept, min_matrix, range_matrix = process_test_and_training_data_in_batches(raw_data_1, raw_data_2, var=0, reduce_features=False)
 
     training_data_to_save = PvNormalDataTrain.numpy()
     testing_data_to_save = PvNormalDataTest.numpy()
-    np.save("./ProcessedRawData/TrainingSet/PvNormalDataNormalised_var0.02", training_data_to_save)
-    np.save("./ProcessedRawData/TestSet/PvNormalDataNormalised_var0.02", testing_data_to_save)
+    np.save("./ProcessedRawData/TrainingSet/PvNormalDataNormalised_no_features_removed", training_data_to_save)
+    np.save("./ProcessedRawData/TestSet/PvNormalDataNormalised_no_features_removed", testing_data_to_save)
     # to use the indices, the images must be turned into arrays first and select the cols to keep using indices_kept.
     # Then add in the bias if needed. Add in the label if needed.
-    np.save("./ProcessedRawData/Index/Indices_Kept_data_var0.02", indices_kept)
+    np.save("./ProcessedRawData/Index/Indices_Kept_data_no_features_removed", indices_kept)
+    np.save("./ProcessedRawData/MinData/min_across_all_features_no_features_removed", min_matrix)
+    np.save("./ProcessedRawData/RangeData/range_across_all_features_no_features_removed", range_matrix)

@@ -1,4 +1,5 @@
 import joblib
+from sklearn.metrics import confusion_matrix
 from sklearn.svm import SVC
 import torch
 from PrepareData import *
@@ -72,17 +73,24 @@ def main():
     start = time.time()
     model = SVMClassifier(kernel_type='rbf')
 
-    train_data = np.load("../ProcessedRawData/TrainingSet/PvNormalDataNormalised_var0.02.npy")
+    train_data = np.load("../ProcessedRawData/TrainingSet/PvNormalDataNormalised_var0.04.npy")
     print("The shape of train_data is", train_data.shape)
     train_data = torch.from_numpy(train_data)
-    train_model(model, train_data, save_model=True)
+    train_model(model, train_data, save_model=False)
 
-    test_data = np.load("../ProcessedRawData/TestSet/PvNormalDataNormalised_var0.02.npy")
+    test_data = np.load("../ProcessedRawData/TestSet/PvNormalDataNormalised_var0.04.npy")
     print("The shape of test_data is", test_data.shape)
     test_data = torch.from_numpy(test_data)
 
     pred = get_predictions(model, test_data)
     actual_labels = get_label(test_data)
     print("The accuracy in % is:", get_accuracy(actual_labels, pred))
+
+    recall = get_recall(actual_labels, pred)
+    print("The recall is:", recall)
+
+    conf_matrix = confusion_matrix(actual_labels, pred)
+    print("The confusion matrix is:\n", conf_matrix)
+
     end = time.time()
     print("Process took", end - start, "seconds.")

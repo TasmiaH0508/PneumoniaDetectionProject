@@ -28,7 +28,7 @@ Table showing the percentage reduction in features by varying the variance of fe
 
 Feature-wise variance maintained | 0.02  | 0.025 | 0.03  | 0.035 | 0.04  | All features maintained |
 --- |-------|-------|-------|-------|-------|-------------------------|
-Number of features | 54983 | 47862 | 37397 | 26112 | 17246 | 63335                   |
+Number of features | 54983 | 47861 | 37397 | 26112 | 17246 | 63336                   |
 Percentage reduction in features | 16    | 27    | 43    | 60    | 74    | 0                       |
 
 ### Results Evaluation
@@ -40,19 +40,20 @@ Two kinds of kernels were used: Gaussian and Linear.
 For the linear kernel and regularisation param c = 1.0:
 
 Feature-wise variance maintained | 0.02 | 0.025 | 0.03 | 0.035 | 0.04 | All features maintained |
---- |----|-------|------|-------|------|-------------------------|
-Percentage accuracy | 91.2 | 90.9    | 90.4   | 90.4  | 89.6 | 91                      |
+--- |------|-------|------|-------|------|-------------------------|
+Percentage accuracy | 90.8 | 90.6  | 90.1 | 89.1  | 88.3 | 91.1                    |
+Recall(decimal) | 0.89 | 0.89  | 0.88 | 0.86  | 0.85 | 0.89                    |
 
 For the Gaussian kernel and regularisation param c = 1.0:
 
 Feature-wise variance maintained | 0.02 | 0.025 | 0.03 | 0.035 | 0.04 | All features maintained |
 --- |------|-------|------|-------|------|-------------------------|
-Percentage accuracy | 91.8 | 91.7  | 91.6 | 91.1  | 90.0 | 91.7                    |
-
-For the predictions, we choose the model with the greatest accuracy.
+Percentage accuracy | 92.6 | 92.4  | 92.0 | 91.8  | 90.4 | 92.3                    |
+Recall(decimal) | 0.92 | 0.91  | 0.91 | 0.91  | 0.89 | 0.92                    |
 
 ### Neural Network
 
+# to fix tomorrow
 Feature-wise variance maintained | 0.02   | 0.025  | 0.03   | 0.035  | 0.04   | All features maintained |
 --- |--------|--------|--------|--------|--------|-------------------------|
 Threshold | 0.65   | 0.65   | 0.65   | 0.65   | 0.65   | 0.65                    |
