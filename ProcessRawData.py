@@ -314,14 +314,14 @@ def main():
     raw_data_1 = process_images(NORMAL_folder_1, target_size)
     raw_data_2 = process_images(P_folder, target_size)
     # if pneumonia present, label is 1
-    PvNormalDataTrain, PvNormalDataTest, indices_kept, min_matrix, range_matrix = process_test_and_training_data_in_batches(raw_data_1, raw_data_2, var=0, reduce_features=False)
+    PvNormalDataTrain, PvNormalDataTest, indices_kept, min_matrix, range_matrix = process_test_and_training_data_in_batches(raw_data_1, raw_data_2, var=0.06, reduce_features=True)
 
     training_data_to_save = PvNormalDataTrain.numpy()
     testing_data_to_save = PvNormalDataTest.numpy()
-    np.save("./ProcessedRawData/TrainingSet/PvNormalDataNormalised_no_features_removed", training_data_to_save)
-    np.save("./ProcessedRawData/TestSet/PvNormalDataNormalised_no_features_removed", testing_data_to_save)
+    np.save("./ProcessedRawData/TrainingSet/PvNormalDataNormalised_var0.06", training_data_to_save)
+    np.save("./ProcessedRawData/TestSet/PvNormalDataNormalised_var0.06", testing_data_to_save)
     # to use the indices, the images must be turned into arrays first and select the cols to keep using indices_kept.
     # Then add in the bias if needed. Add in the label if needed.
-    np.save("./ProcessedRawData/Index/Indices_Kept_data_no_features_removed", indices_kept)
-    np.save("./ProcessedRawData/MinData/min_across_all_features_no_features_removed", min_matrix)
-    np.save("./ProcessedRawData/RangeData/range_across_all_features_no_features_removed", range_matrix)
+    np.save("./ProcessedRawData/Index/Indices_Kept_data_var0.06", indices_kept)
+    np.save("./ProcessedRawData/MinData/min_across_all_features_var0.06", min_matrix)
+    np.save("./ProcessedRawData/RangeData/range_across_all_features_var0.06", range_matrix)

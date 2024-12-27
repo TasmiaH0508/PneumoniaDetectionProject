@@ -1,15 +1,19 @@
 import torch
-
-from LogisticRegressionWONeuralNet.LogisticRegression_wo_NN import transform_features
+import numpy as np
 
 test = torch.asarray([[0, 1, 1],
                       [1, 0, 1],
                       [0, 0, 1],
                       [2, 0, 0],
                       [0, 2, 0]]) # the first 2 cols are features
-test = test[:, [0, 1]]
 
-print(transform_features(test, poly_deg=3))
+num_samples = 5
+np.random.seed(0)
+for i in range(num_samples):
+    rand_index = np.random.choice(num_samples, size=1, replace=False)[0]
+    print(rand_index)
+
+
 # is returning [u, v, u^2, u.v, v.u, v^2]
 
 # if poly_deg == 1,

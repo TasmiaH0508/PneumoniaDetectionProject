@@ -73,12 +73,12 @@ def main():
     start = time.time()
     model = SVMClassifier(kernel_type='rbf')
 
-    train_data = np.load("../ProcessedRawData/TrainingSet/PvNormalDataNormalised_var0.04.npy")
+    train_data = np.load("../ProcessedRawData/TrainingSet/PvNormalDataNormalised_var0.06.npy")
     print("The shape of train_data is", train_data.shape)
     train_data = torch.from_numpy(train_data)
     train_model(model, train_data, save_model=False)
 
-    test_data = np.load("../ProcessedRawData/TestSet/PvNormalDataNormalised_var0.04.npy")
+    test_data = np.load("../ProcessedRawData/TestSet/PvNormalDataNormalised_var0.06.npy")
     print("The shape of test_data is", test_data.shape)
     test_data = torch.from_numpy(test_data)
 
