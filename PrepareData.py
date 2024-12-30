@@ -1,3 +1,5 @@
+import torch
+
 def get_data_without_bias_and_label(data, has_bias=True, has_label=True):
     ''''
     Removes the labels from data(torch tensor)
