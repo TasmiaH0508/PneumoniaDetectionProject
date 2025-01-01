@@ -12,15 +12,13 @@ train = torch.asarray([[0, 1, 0],
                       [2, 0, 1],
                       [0, 2, 0]]) # the first 2 cols are features
 
-test = torch.asarray([[0, 3],
-                      [3, 0]])
+test = torch.asarray([[0, 3, 1, 2],
+                      [3, 0, 3, 4]])
 
 #weights = train_model(10, train, has_bias=False, poly_deg=2, lr=0.01)
 #print(predict(test, weights, has_label=True, has_bias=False, poly_deg=2))
 
-testing = torch.asarray([[0, 1, 0],
-                         [1, 0, 1]])
+weights = torch.asarray([[1, 1, 0, 1]])
+label = torch.asarray([[0, 1]])
 
-#print(transform_features(testing))
-
-print(transform_features_with_batch_processing(testing, batch_size=1))
+get_weights_batch_gradient_descent(1, test, label, weights, 0.1)

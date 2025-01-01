@@ -45,8 +45,14 @@ def transform_features(data, poly_deg=2):
     return data
 
 def transform_features_with_batch_processing(data, poly_deg=2, batch_size=600):
+    ''''
+    Same purpose as transform_features, but with batch processing.
+
+    Suitable for large datasets. But if the data set is very large, it is advisable to stick to poly_deg=1 or poly_deg=2
+    '''
     pow_to_range = dict()  # stores the ranges at which linear, quadratic, cubic terms are present...
     pow_to_range[1] = range(0, data.shape[1])
+    has_been_computed = set()
     if poly_deg >= 2:
         # by the end of every iteration of the outer loop, (transformed) features of deg_i are added.
         for deg_i in range(2, poly_deg + 1):
@@ -60,10 +66,20 @@ def transform_features_with_batch_processing(data, poly_deg=2, batch_size=600):
                     col_to_multiply = data[:, i]
                     col_to_multiply = torch.reshape(col_to_multiply, (col_to_multiply.shape[0], 1))
                     cols_needed = torch.arange(range_of_high_deg.start, range_of_high_deg.stop)
-                    mat = data[:, cols_needed] # mat may be very large
+                    # iterate through cols_needed and check for redundant computations/symmetric terms
+                    indices_to_remove = torch.ones(cols_needed.shape)
+                    indices_to_remove = -indices_to_remove
+                    for k in range(cols_needed.shape[0]):
+                        if (i, cols_needed[k].item()) in has_been_computed or (cols_needed[k].item(), i) in has_been_computed:
+                            indices_to_remove[k] = cols_needed[k]
+                        else:
+                            has_been_computed.add((i, cols_needed[k].item()))
+                    cols_needed = torch.where(indices_to_remove == cols_needed, -1, cols_needed)
+                    indices_to_keep = torch.where(cols_needed != -1)[0]
+                    cols_needed = cols_needed[indices_to_keep]
+                    mat = data[:, cols_needed]
                     num_cols = mat.shape[1]
                     cols_to_add = None
-                    # this loop applies batch processing to mat * col_to_multiply, as mat may be very large
                     for j in range(0, num_cols, batch_size):
                         batch_end = min(j + batch_size, num_cols)
                         mat_segment = mat[:, j : batch_end]
@@ -72,16 +88,9 @@ def transform_features_with_batch_processing(data, poly_deg=2, batch_size=600):
                             cols_to_add = segment_to_add
                         else:
                             cols_to_add = torch.hstack((cols_to_add, segment_to_add))
-                    print("Taking feature: " + str(i))
-                    print(cols_to_add)
-                    if i == 1 and low_deg == high_deg == 1:
-                        # todo: debug; this needs debugging since there is a double counting of features
-                        cols_to_add = cols_to_add[:, 1]
-                        cols_to_add = torch.reshape(cols_to_add, (cols_to_add.shape[0], 1))
                     data = torch.hstack((data, cols_to_add))
                 low_deg += 1
                 high_deg -= 1
-                print("End of one iteration of while loop")
             end_of_range_of_deg_preceding_deg_i = pow_to_range[deg_i - 1].stop
             num_features = data.shape[1]
             pow_to_range[deg_i] = range(end_of_range_of_deg_preceding_deg_i, num_features)
@@ -115,8 +124,7 @@ def train_model(epochs, train_data, has_bias=True, poly_deg=1, lr=0.001, gradien
     np.random.seed(32)
     # train the model
     if gradient_descent_type == 'BGD':
-        #todo
-        weights = 0
+        weights = get_weights_batch_gradient_descent(epochs, transformed_data, actual_label, lr)
     elif gradient_descent_type == 'mBGD':
         #todo
         weights = 0
@@ -126,10 +134,8 @@ def train_model(epochs, train_data, has_bias=True, poly_deg=1, lr=0.001, gradien
     return weights
 
 def get_weights_stochastic_gradient_descent(epochs, data_wo_label, label, weights, lr):
-    ''''
-
-    '''
     num_data_pts = data_wo_label.shape[0]
+    np.random.seed(62)
     for i in range(epochs):
         random_index = np.random.choice(num_data_pts, size=1, replace=False)[0]
         data_pt = data_wo_label[random_index]
@@ -140,11 +146,32 @@ def get_weights_stochastic_gradient_descent(epochs, data_wo_label, label, weight
     return weights
 
 def get_weights_batch_gradient_descent(epochs, data_wo_label, label, weights, lr):
+    for i in range(epochs):
+        num_data_pts = data_wo_label.shape[0]
+        h_w_of_data = h_w(weights, data_wo_label)
+        diff_bw_hw_and_label = torch.reshape(h_w_of_data - label, (num_data_pts, 1))
+        partial_derivative_of_loss_wrt_weights = data_wo_label * diff_bw_hw_and_label
+        partial_derivative_of_loss_wrt_weights = torch.mean(partial_derivative_of_loss_wrt_weights, dim=0)
+        weights = weights - lr * partial_derivative_of_loss_wrt_weights
+    return weights
 
-    return 0
+def get_weights_mini_batch_gradient_descent(epochs, data_wo_label, label, weights, lr, batch_size):
+    np.random.seed(23)
+    for i in range(epochs):
+        num_data_pts = data_wo_label.shape[0]
+        random_indices = np.random.choice(num_data_pts, size=batch_size, replace=False)
+        num_data_pts = batch_size
+        sampled_data = data_wo_label[random_indices]
+        sample_label = label[random_indices]
+        h_w_of_data = h_w(weights, sampled_data)
+        diff_bw_hw_and_label = torch.reshape(h_w_of_data - sample_label, (num_data_pts, 1))
+        partial_derivative_of_loss_wrt_weights = data_wo_label * diff_bw_hw_and_label
+        partial_derivative_of_loss_wrt_weights = torch.mean(partial_derivative_of_loss_wrt_weights, dim=0)
+        weights = weights - lr * partial_derivative_of_loss_wrt_weights
+    return weights
 
 def compute_loss():
-    #todo: can use to print loss at the end of training
+    #todo
     return 0
 
 def h_w(weights, x):
