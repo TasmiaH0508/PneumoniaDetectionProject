@@ -15,6 +15,8 @@ device = (
 
 print(f"Using {device} device")
 
+# todo: maybe create an error if the dimensions are not matching
+
 class NeuralNetwork(nn.Module):
     def __init__(self, num_input_features=1000):
         super().__init__()
@@ -97,37 +99,3 @@ def predict_with_saved_weights(test_data, threshold=0.65, has_bias=False, has_la
         return pred
     except FileNotFoundError:
         print("File not found, weights cannot be used.")
-
-def main():
-    start = time.time()
-    # prepare training data
-    train_data = np.load("../ProcessedRawData/TrainingSet/PvNormalDataNormalised_var0.025.npy")
-    train_data = torch.from_numpy(train_data).float()
-    num_features_excluding_bias = train_data.shape[1] - 2 # since the last col is the label and the first is the bias
-
-    # prepare test data
-    test_data = np.load("../ProcessedRawData/TestSet/PvNormalDataNormalised_var0.025.npy")
-    test_data = torch.from_numpy(test_data).float()
-
-    # instantiate model to pass into relevant functions
-    model = NeuralNetwork(num_features_excluding_bias)
-
-    # train the model
-    optimiser = torch.optim.Adam(model.parameters(), lr=0.001)
-    train_model(model, 350, train_data, optimiser, save_weights=True)
-
-    print("Model has been trained")
-
-    # get predictions on test data
-    # predictions = predict(model, 0.5, test_data, bias_present=True)
-    predictions = predict_with_saved_weights(model, test_data, 0.65, "./torch_weights.pth")
-
-    # get accuracy
-    actual_test_labels = get_label(test_data)
-    print("The accuracy of the model is:", get_accuracy(actual_test_labels, predictions))
-
-    # get recall
-    print("The recall of this model is:", get_recall(actual_test_labels, predictions))
-
-    end = time.time()
-    print("Time taken in seconds:", end - start)

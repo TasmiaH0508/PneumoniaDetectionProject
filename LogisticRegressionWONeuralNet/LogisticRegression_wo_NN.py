@@ -77,6 +77,7 @@ def transform_features_with_batch_processing(data, poly_deg=2, batch_size=600):
                     cols_needed = torch.where(indices_to_remove == cols_needed, -1, cols_needed)
                     indices_to_keep = torch.where(cols_needed != -1)[0]
                     cols_needed = cols_needed[indices_to_keep]
+                    # break up matrix for quicker computations
                     mat = data[:, cols_needed]
                     num_cols = mat.shape[1]
                     cols_to_add = None
@@ -96,7 +97,7 @@ def transform_features_with_batch_processing(data, poly_deg=2, batch_size=600):
             pow_to_range[deg_i] = range(end_of_range_of_deg_preceding_deg_i, num_features)
     return data
 
-def train_model(epochs, train_data, has_bias=True, poly_deg=1, lr=0.001, gradient_descent_type='SGD', batch_size=200):
+def train_model(epochs, train_data, has_bias=True, poly_deg=1, lr=0.001, gradient_descent_type='SGD', batch_size=200, sample_size=50, save_weights=False):
     """""""""
     Data must have the label col. 
     """
@@ -108,7 +109,7 @@ def train_model(epochs, train_data, has_bias=True, poly_deg=1, lr=0.001, gradien
         if num_features > large_feature_num and poly_deg > 1:
             raise LargeDataSizeError
     except LargeDataSizeError:
-        print("If you want to continue using the same dataset, set poly_deg=1 or some other smaller number.")
+        print("If you want to continue using the same dataset, set poly_deg=1.")
 
     # transform the features
     data_wo_bias_and_label = get_data_without_bias_and_label(train_data, has_bias=has_bias, has_label=True)
@@ -126,10 +127,12 @@ def train_model(epochs, train_data, has_bias=True, poly_deg=1, lr=0.001, gradien
     if gradient_descent_type == 'BGD':
         weights = get_weights_batch_gradient_descent(epochs, transformed_data, actual_label, lr)
     elif gradient_descent_type == 'mBGD':
-        #todo
-        weights = 0
+        weights = get_weights_mini_batch_gradient_descent(epochs, transformed_data, actual_label, lr, sample_size)
     else:
         weights = get_weights_stochastic_gradient_descent(epochs, transformed_data, actual_label, weights, lr)
+
+    if save_weights:
+        np.save('weights', weights)
 
     return weights
 
@@ -170,7 +173,7 @@ def get_weights_mini_batch_gradient_descent(epochs, data_wo_label, label, weight
         weights = weights - lr * partial_derivative_of_loss_wrt_weights
     return weights
 
-def compute_loss():
+def compute_loss(pred, actual_labels):
     #todo
     return 0
 
@@ -193,6 +196,11 @@ def predict(test_data, weights, has_label=True, has_bias=True, probability_thres
     pred = torch.where(pred > probability_threshold, 1, 0)
     return pred
 
-def predict_with_saved_model(data_pt):
-    #todo
-    return 0
+def predict_with_saved_model(data_pt, p_threshold=0.5, has_bias=False, file_name_to_read_from="./weights.npy"):
+    try:
+        weights = np.load(file_name_to_read_from)
+        # need to find the best model, how the features are transformed...
+        # need to add bias
+        # predict with threshold probability
+    except FileNotFoundError:
+        print("No saved weights found.")
