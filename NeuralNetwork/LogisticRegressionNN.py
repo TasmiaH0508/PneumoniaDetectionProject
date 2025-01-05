@@ -15,8 +15,6 @@ device = (
 
 print(f"Using {device} device")
 
-# todo: maybe create an error if the dimensions are not matching
-
 class NeuralNetwork(nn.Module):
     def __init__(self, num_input_features=1000):
         super().__init__()
@@ -43,8 +41,10 @@ class NeuralNetwork(nn.Module):
 
 def train_model(model, epochs, train_data, optimiser, bias_present=True, use_old_weights=False, save_weights=True,
                 file_name_to_read_from="./torch_weights.pth", file_name_to_write_to="./torch_weights.pth"):
-    '''''''''
-    To put inn description
+    ''''
+    Trains model.
+
+    The train_data param is a tensor that must also include the label.
     '''
     # prepare data
     train_labels = get_label(train_data)
@@ -73,16 +73,23 @@ def train_model(model, epochs, train_data, optimiser, bias_present=True, use_old
         weights = model.state_dict()
         torch.save(weights, file_name_to_write_to)  # overwrites old weights with new weights
 
-def predict(model, threshold_prob, test_data, bias_present=True):
-    ''''''''''
-    Todo
-    '''''''''
-    test_data = get_data_without_bias_and_label(test_data, has_bias=bias_present)
+def predict(model, threshold_prob, test_data, bias_present=True, has_label=True):
+    ''''
+    Returns the prediction.
+
+    The test_data param is a tensor that may or may not include the label or bias.
+    If bias is present, set bias_present=True
+    If label is present, set has_label=True
+    '''
+    test_data = get_data_without_bias_and_label(test_data, has_bias=bias_present, has_label=has_label)
     pred = model.forward(test_data)
     pred = torch.where(pred >= threshold_prob, 1, 0)
     return pred
 
 def predict_with_saved_weights(test_data, threshold=0.65, has_bias=False, has_label=False, file_to_read_from="./torch_weights_var_0.02.pth"):
+    ''''
+    Used to make predictions in ../Analysis/PredictPneumonia.py
+    '''
     if has_bias:
         num_input_features = test_data.shape[1] - 1
     else:
@@ -99,3 +106,27 @@ def predict_with_saved_weights(test_data, threshold=0.65, has_bias=False, has_la
         return pred
     except FileNotFoundError:
         print("File not found, weights cannot be used.")
+
+def main():
+    start = time.time()
+    train_data = np.load("../ProcessedRawData/TrainingSet/PvNormalDataNormalised_var0.02.npy")
+    train_data = torch.from_numpy(train_data)
+    test_data = np.load("../ProcessedRawData/TestSet/PvNormalDataNormalised_var0.02.npy")
+    test_data = torch.from_numpy(test_data)
+
+    num_features_wo_bias = train_data.shape[1] - 2
+
+    model = NeuralNetwork(num_input_features=num_features_wo_bias)
+    optimiser = torch.optim.Adam(model.parameters(), lr=0.001)
+
+    train_model(model, 350, train_data, optimiser, save_weights=True)
+    print("Model has been trained")
+
+    predictions = predict(model, 0.65, test_data)
+    actual_test_labels = get_label(test_data)
+    print("The accuracy of the model is:", get_accuracy(actual_test_labels, predictions))
+
+    print("The recall of this model is:", get_recall(actual_test_labels, predictions))
+
+    end = time.time()
+    print("Time taken in seconds:", end - start)

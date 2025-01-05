@@ -3,22 +3,32 @@ import numpy as np
 from LogisticRegression_wo_NN import *
 import time
 
-# decision boundary = x^2 + 2xy
-# if x^2 + 2xy > 0, 1 else 0
+''''
+Consider a decision boundary: (x - y)^2 <= 1 -> x^2 - 2xy - y^2 <= 1
+Points outside the boundary are classified as 0 and those within are classified as 1
+'''
 
-train = torch.asarray([[0, 1, 0],
-                      [1, 0, 1],
-                      [0, 0, 0],
-                      [2, 0, 1],
-                      [0, 2, 0]]) # the first 2 cols are features
+train = torch.asarray([[0.5, 0.5, 1],
+                       [2, 0, 0],
+                       [4, 2, 0],
+                       [1, 0, 1]])
 
-test = torch.asarray([[0, 3, 1, 2],
-                      [3, 0, 3, 4]])
+test = torch.asarray([[0, 0, 1],
+                      [15, 1, 0],
+                      [2, 4, 0],
+                      [0, 1, 1]])
 
-#weights = train_model(10, train, has_bias=False, poly_deg=2, lr=0.01)
-#print(predict(test, weights, has_label=True, has_bias=False, poly_deg=2))
+weights = train_model(300, train, has_bias=False, poly_deg=3, batch_size=1)
 
-weights = torch.asarray([[1, 1, 0, 1]])
-label = torch.asarray([[0, 1]])
+print(weights)
 
-get_weights_batch_gradient_descent(1, test, label, weights, 0.1)
+pred = predict(test, weights, has_bias=False, poly_deg=3)
+
+print(pred)
+
+print("Now setting poly deg as 1...")
+
+weights = train_model(300, train, has_bias=False, poly_deg=1, batch_size=1)
+print(weights)
+pred = predict(test, weights, has_bias=False, poly_deg=1)
+print(pred) # produces a less accurate result, which is expected

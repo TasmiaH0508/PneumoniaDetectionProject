@@ -1,4 +1,6 @@
 import torch
+
+from ComputeMetrics import get_accuracy, get_recall
 from PrepareData import *
 import numpy as np
 import time
@@ -97,12 +99,15 @@ def transform_features_with_batch_processing(data, poly_deg=2, batch_size=600):
             pow_to_range[deg_i] = range(end_of_range_of_deg_preceding_deg_i, num_features)
     return data
 
-def train_model(epochs, train_data, has_bias=True, poly_deg=1, lr=0.001, gradient_descent_type='SGD', batch_size=200, sample_size=50, save_weights=False):
+def train_model(epochs, train_data, has_bias=True, poly_deg=1, lr=0.01, gradient_descent_type='SGD', batch_size=200, sample_size=1, save_weights=False, file_to_save_to="weights"):
     """""""""
     Data must have the label col. 
     """
     actual_label = get_label(train_data)
     num_features = train_data.shape[1]
+
+    if has_bias:
+        num_features -= 1
 
     # check if data size is too big for transformation to be performed. If it is too big, throw an error.
     try:
@@ -113,26 +118,29 @@ def train_model(epochs, train_data, has_bias=True, poly_deg=1, lr=0.001, gradien
 
     # transform the features
     data_wo_bias_and_label = get_data_without_bias_and_label(train_data, has_bias=has_bias, has_label=True)
+    # print("This is the data wo bias and label:\n", data_wo_bias_and_label)
     transformed_data = transform_features_with_batch_processing(data_wo_bias_and_label, poly_deg=poly_deg, batch_size=batch_size)
+    # print("This is the transformed data wo bias:\n", transformed_data)
 
     # add back bias col
     transformed_data = add_bias(transformed_data)
+    # print("This is the transformed data w bias:\n", transformed_data)
 
     # initialise the weights
     num_features = transformed_data.shape[1]
-    weights = torch.zeros(num_features)
+    weights = torch.zeros(num_features, dtype=torch.float64)
 
     np.random.seed(32)
     # train the model
     if gradient_descent_type == 'BGD':
-        weights = get_weights_batch_gradient_descent(epochs, transformed_data, actual_label, lr)
+        weights = get_weights_batch_gradient_descent(epochs, transformed_data, actual_label, weights, lr)
     elif gradient_descent_type == 'mBGD':
-        weights = get_weights_mini_batch_gradient_descent(epochs, transformed_data, actual_label, lr, sample_size)
+        weights = get_weights_mini_batch_gradient_descent(epochs, transformed_data, actual_label, weights, lr, sample_size)
     else:
         weights = get_weights_stochastic_gradient_descent(epochs, transformed_data, actual_label, weights, lr)
 
     if save_weights:
-        np.save('weights', weights)
+        np.save(file_to_save_to, weights)
 
     return weights
 
@@ -146,6 +154,8 @@ def get_weights_stochastic_gradient_descent(epochs, data_wo_label, label, weight
         actual_label_of_data_pt = label[random_index]
         partial_derivative_of_loss_wrt_weights = data_pt * (h_w_of_data_pt - actual_label_of_data_pt)
         weights = weights - lr * partial_derivative_of_loss_wrt_weights
+        if i == epochs - 1:
+            print("The loss is:", compute_loss(h_w(weights, data_wo_label), label).item())
     return weights
 
 def get_weights_batch_gradient_descent(epochs, data_wo_label, label, weights, lr):
@@ -156,6 +166,8 @@ def get_weights_batch_gradient_descent(epochs, data_wo_label, label, weights, lr
         partial_derivative_of_loss_wrt_weights = data_wo_label * diff_bw_hw_and_label
         partial_derivative_of_loss_wrt_weights = torch.mean(partial_derivative_of_loss_wrt_weights, dim=0)
         weights = weights - lr * partial_derivative_of_loss_wrt_weights
+        if i == epochs - 1:
+            print("The loss is:", compute_loss(h_w(weights, data_wo_label), label).item())
     return weights
 
 def get_weights_mini_batch_gradient_descent(epochs, data_wo_label, label, weights, lr, batch_size):
@@ -171,11 +183,19 @@ def get_weights_mini_batch_gradient_descent(epochs, data_wo_label, label, weight
         partial_derivative_of_loss_wrt_weights = data_wo_label * diff_bw_hw_and_label
         partial_derivative_of_loss_wrt_weights = torch.mean(partial_derivative_of_loss_wrt_weights, dim=0)
         weights = weights - lr * partial_derivative_of_loss_wrt_weights
+        if i == epochs - 1:
+            print("The loss is:", compute_loss(h_w(weights, data_wo_label), label).item())
     return weights
 
 def compute_loss(pred, actual_labels):
-    #todo
-    return 0
+    #todo: debug nan problem
+    num_data_pts = pred.shape[0]
+    # using log base 2
+    # what if pred is 0?, what if it is one? what s
+    to_sum = actual_labels * torch.log(pred) / torch.log(torch.tensor(2)) + (1 - actual_labels) * torch.log(1 - pred) / torch.log(torch.tensor(2))
+    sum = torch.sum(to_sum, dim=-1)
+    loss = -1/num_data_pts * sum if sum != 0 else 0
+    return loss
 
 def h_w(weights, x):
     x = weights @ torch.t(x)
@@ -197,6 +217,7 @@ def predict(test_data, weights, has_label=True, has_bias=True, probability_thres
     return pred
 
 def predict_with_saved_model(data_pt, p_threshold=0.5, has_bias=False, file_name_to_read_from="./weights.npy"):
+    #todo
     try:
         weights = np.load(file_name_to_read_from)
         # need to find the best model, how the features are transformed...
@@ -204,3 +225,21 @@ def predict_with_saved_model(data_pt, p_threshold=0.5, has_bias=False, file_name
         # predict with threshold probability
     except FileNotFoundError:
         print("No saved weights found.")
+
+def main():
+    train_data = np.load("../ProcessedRawData/TrainingSet/PvNormalDataNormalised_var0.02.npy")
+    train_data = torch.from_numpy(train_data)
+    print(train_data.dtype)
+
+    test_data = np.load("../ProcessedRawData/TestSet/PvNormalDataNormalised_var0.02.npy")
+    test_data = torch.from_numpy(test_data)
+
+    weights = train_model(1000, train_data) # using sgd now
+    pred = predict(test_data, weights)
+
+    actual_labels = get_label(test_data)
+    print("The accuracy is:", get_accuracy(actual_labels, pred))
+
+    print("The recall is:", get_recall(actual_labels, pred))
+
+main()
