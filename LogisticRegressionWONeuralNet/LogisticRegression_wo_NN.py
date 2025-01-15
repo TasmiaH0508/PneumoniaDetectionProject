@@ -47,6 +47,7 @@ def transform_features(data, poly_deg=2):
     return data
 
 def transform_features_with_batch_processing(data, poly_deg=2, batch_size=600):
+    #todo: add limit of features
     ''''
     Same purpose as transform_features, but with batch processing.
 
@@ -241,5 +242,3 @@ def main():
     print("The accuracy is:", get_accuracy(actual_labels, pred))
 
     print("The recall is:", get_recall(actual_labels, pred))
-
-main()
