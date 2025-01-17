@@ -21,9 +21,7 @@ def predict_pneumonia(image_path, model='svm'):
     data = process_image(image_path)
     data = simplify_image_data(model, data)
     pred = None
-    if model == 'svm':
-        pred = get_predictions_with_previously_loaded_model(data, has_bias=False, file_to_read_from="../SVM/svm_model.joblib")
-    elif model == 'nn':
+    if model == 'nn':
         pred = predict_with_saved_weights(data, has_bias=False, file_to_read_from="../NeuralNetwork/torch_weights_var_0.02.pth")
     elif model == 'cnn':
         #todo
@@ -31,3 +29,6 @@ def predict_pneumonia(image_path, model='svm'):
     elif model == 'standard':
         #todo
         pred = 0
+    else:
+        pred = get_predictions_with_previously_loaded_model(data, has_bias=False,
+                                                            file_to_read_from="../SVM/svm_model.joblib")

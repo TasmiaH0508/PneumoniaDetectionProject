@@ -3,3 +3,7 @@ RawData/
 ProcessedRawData/
 
 Results.md
+
+CNNModel/
+
+ProcessedCNNData/

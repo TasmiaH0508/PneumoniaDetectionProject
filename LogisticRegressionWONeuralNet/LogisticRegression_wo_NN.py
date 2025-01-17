@@ -46,8 +46,7 @@ def transform_features(data, poly_deg=2):
             pow_to_range[deg_i] = range(end_of_range_of_deg_preceding_deg_i, num_features)
     return data
 
-def transform_features_with_batch_processing(data, poly_deg=2, batch_size=600):
-    #todo: add limit of features
+def transform_features_with_batch_processing(data, poly_deg=2, batch_size=600, feature_limit=float('inf')):
     ''''
     Same purpose as transform_features, but with batch processing.
 
@@ -61,11 +60,14 @@ def transform_features_with_batch_processing(data, poly_deg=2, batch_size=600):
         for deg_i in range(2, poly_deg + 1):
             low_deg = 1
             high_deg = deg_i - low_deg
-            while low_deg <= high_deg:
+            while low_deg <= high_deg and data.shape[1] < feature_limit:
                 range_of_low_deg = pow_to_range[low_deg]
                 range_of_high_deg = pow_to_range[high_deg]
                 # combines 2 single features of low_deg and high_deg together
                 for i in range_of_low_deg:
+                    if data.shape[1] >= feature_limit:
+                        data = data[:, :feature_limit]
+                        break
                     col_to_multiply = data[:, i]
                     col_to_multiply = torch.reshape(col_to_multiply, (col_to_multiply.shape[0], 1))
                     cols_needed = torch.arange(range_of_high_deg.start, range_of_high_deg.stop)
@@ -80,7 +82,7 @@ def transform_features_with_batch_processing(data, poly_deg=2, batch_size=600):
                     cols_needed = torch.where(indices_to_remove == cols_needed, -1, cols_needed)
                     indices_to_keep = torch.where(cols_needed != -1)[0]
                     cols_needed = cols_needed[indices_to_keep]
-                    # break up matrix for quicker computations
+                    # break up matrix for quicker computations(batch processing)
                     mat = data[:, cols_needed]
                     num_cols = mat.shape[1]
                     cols_to_add = None
@@ -119,13 +121,10 @@ def train_model(epochs, train_data, has_bias=True, poly_deg=1, lr=0.01, gradient
 
     # transform the features
     data_wo_bias_and_label = get_data_without_bias_and_label(train_data, has_bias=has_bias, has_label=True)
-    # print("This is the data wo bias and label:\n", data_wo_bias_and_label)
     transformed_data = transform_features_with_batch_processing(data_wo_bias_and_label, poly_deg=poly_deg, batch_size=batch_size)
-    # print("This is the transformed data wo bias:\n", transformed_data)
 
     # add back bias col
     transformed_data = add_bias(transformed_data)
-    # print("This is the transformed data w bias:\n", transformed_data)
 
     # initialise the weights
     num_features = transformed_data.shape[1]
@@ -155,8 +154,6 @@ def get_weights_stochastic_gradient_descent(epochs, data_wo_label, label, weight
         actual_label_of_data_pt = label[random_index]
         partial_derivative_of_loss_wrt_weights = data_pt * (h_w_of_data_pt - actual_label_of_data_pt)
         weights = weights - lr * partial_derivative_of_loss_wrt_weights
-        if i == epochs - 1:
-            print("The loss is:", compute_loss(h_w(weights, data_wo_label), label).item())
     return weights
 
 def get_weights_batch_gradient_descent(epochs, data_wo_label, label, weights, lr):
@@ -167,8 +164,6 @@ def get_weights_batch_gradient_descent(epochs, data_wo_label, label, weights, lr
         partial_derivative_of_loss_wrt_weights = data_wo_label * diff_bw_hw_and_label
         partial_derivative_of_loss_wrt_weights = torch.mean(partial_derivative_of_loss_wrt_weights, dim=0)
         weights = weights - lr * partial_derivative_of_loss_wrt_weights
-        if i == epochs - 1:
-            print("The loss is:", compute_loss(h_w(weights, data_wo_label), label).item())
     return weights
 
 def get_weights_mini_batch_gradient_descent(epochs, data_wo_label, label, weights, lr, batch_size):
@@ -184,19 +179,7 @@ def get_weights_mini_batch_gradient_descent(epochs, data_wo_label, label, weight
         partial_derivative_of_loss_wrt_weights = data_wo_label * diff_bw_hw_and_label
         partial_derivative_of_loss_wrt_weights = torch.mean(partial_derivative_of_loss_wrt_weights, dim=0)
         weights = weights - lr * partial_derivative_of_loss_wrt_weights
-        if i == epochs - 1:
-            print("The loss is:", compute_loss(h_w(weights, data_wo_label), label).item())
     return weights
-
-def compute_loss(pred, actual_labels):
-    #todo: debug nan problem
-    num_data_pts = pred.shape[0]
-    # using log base 2
-    # what if pred is 0?, what if it is one? what s
-    to_sum = actual_labels * torch.log(pred) / torch.log(torch.tensor(2)) + (1 - actual_labels) * torch.log(1 - pred) / torch.log(torch.tensor(2))
-    sum = torch.sum(to_sum, dim=-1)
-    loss = -1/num_data_pts * sum if sum != 0 else 0
-    return loss
 
 def h_w(weights, x):
     x = weights @ torch.t(x)

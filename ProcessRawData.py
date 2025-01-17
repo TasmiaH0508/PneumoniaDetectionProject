@@ -308,8 +308,10 @@ def process_test_and_training_data_in_batches(raw_data_1, raw_data_2, var=0.04, 
     # the mean and range matrices are calculated based on the training set
     return processed_training_data, processed_test_data, indices_with_sufficiently_large_variance, min_matrix, range_matrix
 
-
-def main():
+def prepare_data():
+    ''''
+    Prepares data for training and testing for various machine learning techniques, that is not CNN.
+    '''
     # Process final data
     raw_data_1 = process_images(NORMAL_folder_1, target_size)
     raw_data_2 = process_images(P_folder, target_size)
@@ -320,7 +322,7 @@ def main():
     testing_data_to_save = PvNormalDataTest.numpy()
     np.save("./ProcessedRawData/TrainingSet/PvNormalDataNormalised_var0.06", training_data_to_save)
     np.save("./ProcessedRawData/TestSet/PvNormalDataNormalised_var0.06", testing_data_to_save)
-    # to use the indices, the images must be turned into arrays first and select the cols to keep using indices_kept.
+    # to use the indices, the images must be turned into arrays first. Then, select the cols to keep using indices_kept.
     # Then add in the bias if needed. Add in the label if needed.
     np.save("./ProcessedRawData/Index/Indices_Kept_data_var0.06", indices_kept)
     np.save("./ProcessedRawData/MinData/min_across_all_features_var0.06", min_matrix)
