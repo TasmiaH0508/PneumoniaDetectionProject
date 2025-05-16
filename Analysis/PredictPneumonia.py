@@ -18,6 +18,7 @@ def simplify_image_data(model, data):
     return data
 
 def predict_pneumonia(image_path, model='svm'):
+    # todo
     data = process_image(image_path)
     data = simplify_image_data(model, data)
     pred = None
@@ -32,3 +33,4 @@ def predict_pneumonia(image_path, model='svm'):
     else:
         pred = get_predictions_with_previously_loaded_model(data, has_bias=False,
                                                             file_to_read_from="../SVM/svm_model.joblib")
+    return pred
