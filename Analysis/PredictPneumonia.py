@@ -1,11 +1,10 @@
-from ProcessRawData import process_image, min_max_normalise_with_predefined_params
+from ProcessRawData import min_max_normalise_with_predefined_params, process_image
 from SVM.SVM import get_predictions_with_previously_loaded_model
 from NeuralNetwork.LogisticRegressionNN import predict_with_saved_weights
 import numpy as np
 import torch
 
 # feed in a 256 by 256 xray picture and get predictions
-
 def simplify_image_data(model, data):
     if model == 'svm' or model == 'nn':
         min_matrix = np.load("../ProcessedRawData/MinData/min_across_all_features_var0.02.npy")
@@ -18,10 +17,8 @@ def simplify_image_data(model, data):
     return data
 
 def predict_pneumonia(image_path, model='svm'):
-    # todo
     data = process_image(image_path)
     data = simplify_image_data(model, data)
-    pred = None
     if model == 'nn':
         pred = predict_with_saved_weights(data, has_bias=False, file_to_read_from="../NeuralNetwork/torch_weights_var_0.02.pth")
     elif model == 'cnn':

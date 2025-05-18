@@ -85,10 +85,10 @@ def pca_with_batch_processing(data, batch_size=400):
 
     Data is expected to be normalised and of the type torch tensor.
     '''
-    data = data.T  # has shape (number of data points, number of features)
+    data = data.T  # after transposing, the dimensions are (num features, num_samples)
     num_data_points = data.shape[1]
     num_features = data.shape[0]
-    mean_matrix = torch.mean(data, dim=1)
+    mean_matrix = torch.mean(data, dim=1) # computed over all features
     mean_matrix = torch.reshape(mean_matrix, (num_features, 1))
     mean_centred_data = data - mean_matrix
     # do batch processing as covariance matrix takes a long time to be computed

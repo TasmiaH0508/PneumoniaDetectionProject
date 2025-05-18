@@ -7,3 +7,5 @@ Results.md
 CNNModel/
 
 ProcessedCNNData/
+
+SVM/svm_model.joblib

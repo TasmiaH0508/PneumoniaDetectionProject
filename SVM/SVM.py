@@ -1,7 +1,6 @@
 import joblib
 from sklearn.metrics import confusion_matrix
 from sklearn.svm import SVC
-import torch
 from PrepareData import *
 from ComputeMetrics import *
 from joblib import dump
@@ -73,12 +72,12 @@ def main():
     start = time.time()
     model = SVMClassifier(kernel_type='rbf')
 
-    train_data = np.load("../ProcessedRawData/TrainingSet/PvNormalDataNormalised_var0.06.npy")
+    train_data = np.load("../ProcessedRawData/TrainingSet/PvNormalDataNormalised_var0.02.npy")
     print("The shape of train_data is", train_data.shape)
     train_data = torch.from_numpy(train_data)
-    train_model(model, train_data, save_model=False)
+    train_model(model, train_data, save_model=True)
 
-    test_data = np.load("../ProcessedRawData/TestSet/PvNormalDataNormalised_var0.06.npy")
+    test_data = np.load("../ProcessedRawData/TestSet/PvNormalDataNormalised_var0.02.npy")
     print("The shape of test_data is", test_data.shape)
     test_data = torch.from_numpy(test_data)
 
