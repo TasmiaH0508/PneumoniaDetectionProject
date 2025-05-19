@@ -1,11 +1,13 @@
-RawData/
+App/RawData/
 
-ProcessedRawData/
+App/ProcessedRawData/
 
 Results.md
 
-CNNModel/
+App/CNNModel/
 
-ProcessedCNNData/
+App/ProcessedCNNData/
 
-SVM/svm_model.joblib
+App/SVM/svm_model.joblib
+
+App/Data
