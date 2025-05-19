@@ -2,8 +2,6 @@ App/RawData/
 
 App/ProcessedRawData/
 
-Results.md
-
 App/CNNModel/
 
 App/ProcessedCNNData/
@@ -11,3 +9,5 @@ App/ProcessedCNNData/
 App/SVM/svm_model.joblib
 
 App/Data
+
+App/TestImages

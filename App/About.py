@@ -1,53 +1,43 @@
 import streamlit as st
 from PIL import Image
 
-from App.Analysis.PredictPneumonia import predict_pneumonia
-
 st.set_page_config(
     page_title="Predict Pneumonia",
     page_icon="📊",
 )
 
 def intro():
-    # Project description
-    st.title("Predict Pneumonia from x-rays 🩻")
-    st.markdown(
-        "In this project, several models(NN, SVM and CNN) were trained to predict pneumonia from chest x-ray images. "
-        "Feel free to use the best classifier trained so far below. Afterwards, you may experiment with the other "
-        "models in the dropdown on the left."
-    )
-    st.subheader("⭕️ Guidelines for images:")
+    # Goal of Project
     st.markdown(
         """
-        - **Only chest x-ray images** can be used.
-        - For best results, ensure that the chest x-ray images are **256 by 256 pixels** of the most appropriate regions. 
-        """
-    )
-    st.warning("⚠️ Use the models at your own discretion.")
-    st.subheader("⬇️ Upload your chest x-ray here:")
-
-    # for image upload
-    uploaded_file = st.file_uploader("Choose an image", type=["png"])
-    if uploaded_file is not None:
-        image = Image.open(uploaded_file)
-        st.image(image, caption="Uploaded Image", use_container_width=True)
-        st.session_state.image_given = True
-        st.session_state.image = uploaded_file
-
-    st.button("Predict Pneumonia", help="Start classifying")
-
-    # error message if no image is given
-    if st.session_state.get("no_image_given_error", False):
-        st.error("No image given.")
-
-    st.info(
-        """
-        What model have we used here?
+        # 🎯Goal of Project
+        Train an image classifier that can distinguish x-ray photographs of patients with pneumonia 
+        and those without.
         
-        Here, we have used SVM
+        ### Models explored
+        - SVM
+        - Neural Network
+        - CNN
+        - Perceptron (transformed features)
+        
+        ### Processing the Data
+
+        The method of processing images for SVM and Neural Network was different from CNN.
+
+        For SVM and Neural Network, the images where processed such that every image was represented as a list.
+        Since every x-ray photograph was 65536 pixels and there were about 3600 images, the data matrix was too 
+        large, motivating the use of PCA.
+
+        Before PCA was applied, about 10%(or 200) of the data points were randomly selected from each data group(Pneumonia
+        and non-pneumonia). Normalisation was then applied to the test set. After applying PCA to the training data(and 
+        reconstructing the data), features showing very little variance were removed from both the test and training data. Since
+        the training set was already normalised, the test set was normalised separately on its own.
+        
+        The labels were then added such that if pneumonia was present, a label of 1 was given and a label of 0 to those without 
+        Pneumonia.
+        
+        Table showing the percentage reduction in features by varying the variance of features:
         """
     )
-
-    st.sidebar.success("ML Models")
-
+    #todo
 intro()

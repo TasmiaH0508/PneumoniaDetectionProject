@@ -1,8 +1,6 @@
 import streamlit as st
 from PIL import Image
 
-from App.Analysis.PredictPneumonia import predict_pneumonia
-
 st.set_page_config(
     page_title="Predict Pneumonia with SVM",
     page_icon="📊",
