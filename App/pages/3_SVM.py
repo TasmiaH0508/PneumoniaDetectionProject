@@ -71,11 +71,6 @@ def predict():
     else:
         st.session_state.predicted = True
         st.session_state.no_image_given_error = False
-        prediction = predict_pneumonia(st.session_state.image).item()
-        if prediction == 1:
-            st.session_state.pneumonia_detected = True
-        else:
-            st.session_state.pneumonia_not_detected = True
 
 
 intro()

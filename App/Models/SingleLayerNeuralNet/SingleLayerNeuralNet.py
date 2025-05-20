@@ -211,11 +211,11 @@ def predict_with_saved_model(data_pt, p_threshold=0.5, has_bias=False, file_name
         print("No saved weights found.")
 
 def main():
-    train_data = np.load("../ProcessedRawData/TrainingSet/PvNormalDataNormalised_var0.02.npy")
+    train_data = np.load("../Data/ProcessedRawData/TrainingSet/PvNormalDataNormalised_var0.02.npy")
     train_data = torch.from_numpy(train_data)
     print(train_data.dtype)
 
-    test_data = np.load("../ProcessedRawData/TestSet/PvNormalDataNormalised_var0.02.npy")
+    test_data = np.load("../Data/ProcessedRawData/TestSet/PvNormalDataNormalised_var0.02.npy")
     test_data = torch.from_numpy(test_data)
 
     weights = train_model(1000, train_data) # using sgd now

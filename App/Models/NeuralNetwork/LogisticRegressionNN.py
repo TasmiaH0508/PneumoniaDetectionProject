@@ -107,9 +107,9 @@ def predict_with_saved_weights(test_data, threshold=0.65, has_bias=False, has_la
 
 def main():
     start = time.time()
-    train_data = np.load("../ProcessedRawData/TrainingSet/PvNormalDataNormalised_var0.02.npy")
+    train_data = np.load("../Data/ProcessedRawData/TrainingSet/PvNormalDataNormalised_var0.02.npy")
     train_data = torch.from_numpy(train_data)
-    test_data = np.load("../ProcessedRawData/TestSet/PvNormalDataNormalised_var0.02.npy")
+    test_data = np.load("../Data/ProcessedRawData/TestSet/PvNormalDataNormalised_var0.02.npy")
     test_data = torch.from_numpy(test_data)
 
     num_features_wo_bias = train_data.shape[1] - 2

@@ -1,13 +1,13 @@
-App/RawData/
+App/Models/Data/RawData/
 
-App/ProcessedRawData/
+App/Models/Data/ProcessedRawData/
 
-App/CNNModel/
+App/Models/CNNModel/
 
-App/ProcessedCNNData/
+App/Models/Data/ProcessedCNNData/
 
-App/SVM/svm_model.joblib
+App/Models/SVM/svm_model.joblib
 
 App/Data
 
-App/TestImages
+App/Models/Data/TestImages

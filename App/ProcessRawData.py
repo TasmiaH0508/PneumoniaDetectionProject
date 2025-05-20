@@ -1,12 +1,12 @@
 import os
 
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageOps
 
 import torch
 
-P_folder = "./RawData/PNEUMONIA"
-NORMAL_folder_1 = "./RawData/NORMAL"
+P_folder = "./Models/Data/RawData/PNEUMONIA"
+NORMAL_folder_1 = "./Models/Data/RawData/NORMAL"
 target_size = (256, 256)
 
 def process_image(image_path):
@@ -15,7 +15,17 @@ def process_image(image_path):
     '''
     try:
         image = Image.open(image_path).convert("L")
-        image = image.resize((256, 256))
+
+        image_height, image_width = image.size
+        if image_height < target_size[0] or image_width < target_size[1]:
+            image.thumbnail(target_size, Image.LANCZOS)
+            delta_w = 256 - image.size[0]
+            delta_h = 256 - image.size[1]
+            padding = (delta_w // 2, delta_h // 2, delta_w - delta_w // 2, delta_h - delta_h // 2)
+            image = ImageOps.expand(image, padding, fill=0)
+        else:
+            image = image.resize((256, 256), Image.LANCZOS)
+
         image = np.array(image).flatten()
         image = image / 255
         image = torch.from_numpy(image).float()
@@ -36,9 +46,17 @@ def process_images(image_folder, target_size):
             # Load image
             image_path = os.path.join(image_folder, filename)
             img = Image.open(image_path).convert("L")  # Convert to grayscale
+            img_height, img_width = img.size
 
             # Resize image
-            img_resized = img.resize(target_size)
+            if img_height < target_size[0] or img_width < target_size[1]:
+                img.thumbnail((256, 256), Image.LANCZOS)
+                delta_w = 256 - img.size[0]
+                delta_h = 256 - img.size[1]
+                padding = (delta_w // 2, delta_h // 2, delta_w - delta_w // 2, delta_h - delta_h // 2)
+                img_resized= ImageOps.expand(img, padding, fill=0)
+            else:
+                img_resized = img.resize((256, 256), Image.LANCZOS)
 
             # Flatten to 1D feature vector
             img_array = np.array(img_resized).flatten()
@@ -50,6 +68,20 @@ def process_images(image_folder, target_size):
             image_features.append(img_array)
     return np.array(image_features)
 
+def find_min_max_dimensions_in_image_folder(image_folder):
+    min_size = float('inf')
+    max_size = float('-inf')
+    for filename in os.listdir(image_folder):
+        if filename.endswith(".png"):
+            image_path = os.path.join(image_folder, filename)
+            img = Image.open(image_path).convert("L")
+            img_shape = img.size
+            img_pixels = img_shape[0] * img_shape[1]
+            if img_pixels < min_size:
+                min_size = img_pixels
+            if img_pixels > max_size:
+                max_size = img_pixels
+    return min_size, max_size
 
 def pca(data):
     ''''
@@ -316,14 +348,14 @@ def prepare_data():
     raw_data_1 = process_images(NORMAL_folder_1, target_size)
     raw_data_2 = process_images(P_folder, target_size)
     # if pneumonia present, label is 1
-    PvNormalDataTrain, PvNormalDataTest, indices_kept, min_matrix, range_matrix = process_test_and_training_data_in_batches(raw_data_1, raw_data_2, var=0.06, reduce_features=True)
+    PvNormalDataTrain, PvNormalDataTest, indices_kept, min_matrix, range_matrix = process_test_and_training_data_in_batches(raw_data_1, raw_data_2, var=0.02, reduce_features=True)
 
     training_data_to_save = PvNormalDataTrain.numpy()
     testing_data_to_save = PvNormalDataTest.numpy()
-    np.save("App/ProcessedRawData/TrainingSet/PvNormalDataNormalised_var0.06", training_data_to_save)
-    np.save("App/ProcessedRawData/TestSet/PvNormalDataNormalised_var0.06", testing_data_to_save)
+    np.save("./Models/Data/ProcessedRawData/TrainingSet/PvNormalDataNormalised_var0.02", training_data_to_save)
+    np.save("./Models/Data/ProcessedRawData/TestSet/PvNormalDataNormalised_var0.02", testing_data_to_save)
     # to use the indices, the images must be turned into arrays first. Then, select the cols to keep using indices_kept.
     # Then add in the bias if needed. Add in the label if needed.
-    np.save("App/ProcessedRawData/Index/Indices_Kept_data_var0.06", indices_kept)
-    np.save("App/ProcessedRawData/MinData/min_across_all_features_var0.06", min_matrix)
-    np.save("App/ProcessedRawData/RangeData/range_across_all_features_var0.06", range_matrix)
+    np.save("./Models/Data/ProcessedRawData/Index/Indices_Kept_data_var0.02", indices_kept)
+    np.save("./Models/Data/ProcessedRawData/MinData/min_across_all_features_var0.02", min_matrix)
+    np.save("./Models/Data/ProcessedRawData/RangeData/range_across_all_features_var0.02", range_matrix)
