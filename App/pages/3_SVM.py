@@ -15,9 +15,9 @@ def intro():
         "Feel free to use the best classifier trained so far below. Afterwards, you may experiment with the other "
         "models in the dropdown on the left."
     )
-    st.subheader("⭕️ Guidelines for images:")
-    st.markdown(
+    st.info(
         """
+        ### ⭕️ Guidelines for images:
         - **Only chest x-ray images** can be used.
         - For best results, ensure that the chest x-ray images are **256 by 256 pixels** of the most appropriate regions. 
         """
@@ -54,15 +54,17 @@ def intro():
         else:
             st.warning("Evaluation failed.")
 
-    st.info(
+    st.markdown(
         """
-        What model have we used here?
-
-        Here, we have used SVM
+        ### 🔎 About the SVM model
+        
+        The classifier was trained on 2 kinds of data: 
+        - **Dataset A:** The first data set was created by converting each images into a vector. No features were removed.
+        - **Dataset B:** The second data set was created by converting each images into a vector and removing features based on the 
+        threshold variance(i.e. if the variance of the feature a feature across all samples is lower than the threshold 
+        variance, the feature is removed).
         """
     )
-
-    st.sidebar.success("ML Models")
 
 
 def predict():

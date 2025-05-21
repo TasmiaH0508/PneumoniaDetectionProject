@@ -25,7 +25,7 @@ def intro():
         The method of processing images for SVM and Neural Network was different from CNN.
 
         For SVM and Neural Network, the images where processed such that every image was represented as a list. Since 
-        the images were of different sizes, padding was added for cases where the image is smaller than the target size.
+        the images were of different sizes, padding was added if images were bigger or smaller than the target size.
         Since every x-ray photograph was 65536 pixels and there were about 3600 images, the data matrix was too 
         large, motivating the use of PCA.
 
