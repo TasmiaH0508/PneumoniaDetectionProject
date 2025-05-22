@@ -69,7 +69,7 @@ def get_precision(actual_labels, predicted_labels):
 
 def get_recall(actual_labels, predicted_labels):
     tp = get_num_true_positives(actual_labels, predicted_labels)
-    fn = get_num_false_positives(actual_labels, predicted_labels)
+    fn = get_num_false_negatives(actual_labels, predicted_labels)
     return tp / (tp + fn)
 
 def get_confusion_matrix(actual_labels, predicted_labels):
