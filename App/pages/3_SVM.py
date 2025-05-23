@@ -69,8 +69,30 @@ results_5_labels = ["accuracy for A", "precision for A", "recall for A", "f1-sco
                     "accuracy for B", "precision for B", "recall for B", "f1-score for B"]
 results_5_index = [1/2500, 1/3000, 1/4000, 1/6000, 1/8000, 1/1000, 1/900]
 
+
 def intro():
-    # Project description
+    display_description()
+    # for image upload
+    uploaded_file = st.file_uploader("Choose an image", type=["png"])
+    if uploaded_file is not None:
+        image = Image.open(uploaded_file)
+        st.image(image, caption="Uploaded Image", use_container_width=True)
+
+    st.button("Predict Pneumonia", on_click=predict, help="Start classifying")
+
+    display_prediction_results()
+
+    display_findings()
+
+def predict():
+    # todo
+    return
+
+def display_prediction_results():
+    # todo
+    return
+
+def display_description():
     st.title("Predict Pneumonia from x-rays 🩻")
     st.markdown(
         "In this project, several models(NN, SVM and CNN) were trained to predict pneumonia from chest x-ray images. "
@@ -86,38 +108,6 @@ def intro():
     )
     st.warning("⚠️ Use the models at your own discretion.")
     st.subheader("⬇️ Upload your chest x-ray here:")
-
-    # for image upload
-    uploaded_file = st.file_uploader("Choose an image", type=["png"])
-    if uploaded_file is not None:
-        image = Image.open(uploaded_file)
-        st.image(image, caption="Uploaded Image", use_container_width=True)
-        st.session_state.image_given = True
-        st.session_state.image = uploaded_file
-
-    st.button("Predict Pneumonia", on_click=predict, help="Start classifying")
-
-    # error message if no image is given
-    if st.session_state.get("no_image_given_error", False):
-        st.error("No image given.")
-
-    # for displaying the predictions
-    if st.session_state.get("predicted", False):
-        if st.session_state.get("pneumonia_not_detected", False):
-            st.markdown("---")
-            st.subheader("📊 Prediction Results")
-            st.success("🟢 Pneumonia not detected.")
-            st.markdown("---")
-        elif st.session_state.get("pneumonia_detected", False):
-            st.markdown("---")
-            st.subheader("📊 Prediction Results")
-            st.error("🔴 Pneumonia detected.")
-            st.markdown("---")
-        else:
-            st.warning("Evaluation failed.")
-
-    display_findings()
-
 
 def create_unstacked_bar_graph(data, labels, index, x_axis_label):
     chart_data = pd.DataFrame(
@@ -147,16 +137,6 @@ def create_line_chart(data, labels, index, x_axis_label, domain):
     )
 
     st.altair_chart(chart, use_container_width=True)
-
-
-def predict():
-    if not (st.session_state.get("image_given", False)):
-        st.session_state.no_image_given_error = True
-    else:
-        st.session_state.no_image_given_error = False
-        # train
-        training_data = np.load("App/Models/Data/ProcessedRawData/TrainingSet/PvNormalDataNormalised.npy")
-        st.session_state.predicted = True
 
 def display_findings():
     st.markdown(
