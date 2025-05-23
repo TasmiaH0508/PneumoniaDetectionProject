@@ -9,21 +9,6 @@ P_folder = "./Models/Data/RawData/PNEUMONIA"
 NORMAL_folder_1 = "./Models/Data/RawData/NORMAL"
 target_size = (256, 256)
 
-def process_image(image_path):
-    ''''
-    Returns image as a torch tensor of shape (1, num_features) without any bias added.
-    '''
-    try:
-        image = pad_image(image_path)
-        image = np.array(image).flatten()
-        image = image / 255
-        image = torch.from_numpy(image).float()
-        num_features = image.shape[0]
-        image = torch.reshape(image, (1, num_features))
-        return image
-    except FileNotFoundError:
-        print("File not found")
-
 def process_images(image_folder):
     ''''
     Takes a folder of '.png' images and returns a 2D np array, where the rows are the data points and 
