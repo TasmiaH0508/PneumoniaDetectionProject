@@ -6,8 +6,6 @@ App/Models/CNNModel/
 
 App/Models/Data/ProcessedCNNData/
 
-App/Models/SVM/svm_model.joblib
-
-App/Data
+App/Models/Data
 
 App/Models/Data/TestImages

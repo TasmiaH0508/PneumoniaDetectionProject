@@ -1,7 +1,6 @@
 import os
 
 import numpy as np
-from PIL import Image, ImageOps
 
 import torch
 
@@ -63,7 +62,7 @@ def pad_image(image_path):
     image = ImageOps.pad(image, target_size, method=Image.LANCZOS, color=0)
     return image
 
-def print_image(image_path):
+def print_padded_image(image_path):
     padded_image = pad_image(image_path)
     plt.imshow(padded_image, cmap='gray')
     plt.title("Padded Image")

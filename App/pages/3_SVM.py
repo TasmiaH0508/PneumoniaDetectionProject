@@ -1,8 +1,10 @@
 import numpy as np
 import pandas as pd
 import streamlit as st
-from PIL import Image
+from PIL import Image, ImageOps
 import altair as alt
+
+from App.Models.SVM.SVM import process_image, train_model, predict_with_input_model
 
 st.set_page_config(
     page_title="Predict Pneumonia with SVM",
@@ -69,7 +71,6 @@ results_5_labels = ["accuracy for A", "precision for A", "recall for A", "f1-sco
                     "accuracy for B", "precision for B", "recall for B", "f1-score for B"]
 results_5_index = [1/2500, 1/3000, 1/4000, 1/6000, 1/8000, 1/1000, 1/900]
 
-
 def intro():
     display_description()
     # for image upload
@@ -77,20 +78,45 @@ def intro():
     if uploaded_file is not None:
         image = Image.open(uploaded_file)
         st.image(image, caption="Uploaded Image", use_container_width=True)
+        st.session_state.uploaded_file = uploaded_file
 
     st.button("Predict Pneumonia", on_click=predict, help="Start classifying")
 
-    display_prediction_results()
+    if st.session_state.get("no_file_uploaded_error", False):
+        st.error("Please upload an image.")
+    elif st.session_state.get("is_predicted", False):
+        if st.session_state.get("prediction") == 0.0:
+            st.success(
+                """
+                ### 📊Evaluation results
+                🟢 No pneumonia was detected.
+                """
+            )
+        else:
+            st.error(
+                """
+                ### 📊Evaluation results
+                🔴 Pneumonia was detected.
+                """
+            )
+    else:
+        st.warning("Please ensure that you have uploaded an image.")
 
     display_findings()
 
 def predict():
-    # todo
-    return
-
-def display_prediction_results():
-    # todo
-    return
+    if st.session_state.get("uploaded_file") is None:
+        st.session_state.no_file_uploaded_error = True
+        st.session_state.is_predicted = False
+    else:
+        st.session_state.no_file_uploaded_error = False
+        training_data = np.load("App/Models/Data/ProcessedRawData/TrainingSet/PvNormalDataNormalised.npy")
+        trained_model = train_model(training_data, kernel='rbf', gamma=0.0004)
+        processed_image_arr = process_image(st.session_state.uploaded_file)
+        prediction = predict_with_input_model(trained_model, processed_image_arr, has_label=False)
+        prediction = prediction[0].item()
+        st.session_state.prediction = prediction
+        st.session_state.is_predicted = True
 
 def display_description():
     st.title("Predict Pneumonia from x-rays 🩻")
