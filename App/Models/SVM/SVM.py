@@ -2,9 +2,9 @@ import os
 
 import numpy as np
 import torch
+from PIL import Image
 from sklearn import svm
 
-from App.ComputeMetrics import get_accuracy
 from App.PrepareData import get_data_without_bias_and_label, get_label
 from App.ProcessRawData import pad_image, min_max_normalise_with_predefined_params
 
@@ -37,43 +37,40 @@ def predict_with_input_model(clf, test_data, has_label=True):
     predicted = torch.from_numpy(predicted)
     return predicted
 
-def process_image(image_path, is_within_same_file=False):
-    padded_image = pad_image(image_path)
-    image_arr = np.array(padded_image).flatten()
-    image_arr = np.reshape(image_arr, (1, image_arr.shape[0]))
-    if is_within_same_file:
-        range_matrix = np.load("../Data/ProcessedRawData/RangeData/range_across_all_features.npy")
-        min_matrix = np.load("../Data/ProcessedRawData/MinData/min_across_all_features.npy")
-    else:
-        range_matrix = np.load("App/Models/Data/ProcessedRawData/RangeData/range_across_all_features.npy")
-        min_matrix = np.load("App/Models/Data/ProcessedRawData/MinData/min_across_all_features.npy")
-    range_matrix = np.reshape(range_matrix, (1, range_matrix.shape[0]))
-    min_matrix = np.reshape(min_matrix, (1, min_matrix.shape[0]))
-    image_arr = min_max_normalise_with_predefined_params(image_arr, min_matrix, range_matrix)
-    # no features were removed for the chosen model so feature mapping not needed
+def process_image(image_path):
+    image = Image.open(image_path).convert('L')
+    cropped_image = crop_and_centralise_image_into_square(image)
+    padded_and_cropped_image = pad_image(cropped_image)
+    print_image(padded_and_cropped_image)
+    image_array = np.array(padded_and_cropped_image).flatten()
+    # need the scaling
+    image_array = image_array / 255
+    image_array = np.reshape(image_array, (1, image_array.shape[0]))
+    min_matrix = np.load("../Data/ProcessedRawData/MinData/min_across_all_features.npy")
+    min_matrix = np.reshape(min_matrix, (image_array.shape[0], image_array.shape[1]))
+    range_matrix = np.load("../Data/ProcessedRawData/RangeData/range_across_all_features.npy")
+    range_matrix = np.reshape(range_matrix, (image_array.shape[0], image_array.shape[1]))
+    normalised_arr = min_max_normalise_with_predefined_params(image_array, min_matrix, range_matrix)
     bias = np.ones((1, 1))
-    image_arr = np.hstack((bias, image_arr))
-    image_arr = torch.from_numpy(image_arr)
-    return image_arr
+    normalised_arr = np.hstack((bias, normalised_arr))
+    normalised_arr = torch.from_numpy(normalised_arr)
+    return normalised_arr
 
-# why is the model returning the same predictions for everything???
-train_data = np.load("../Data/ProcessedRawData/TrainingSet/PvNormalDataNormalised.npy")
-train_data = torch.from_numpy(train_data)
-model = train_model(train_data, kernel='rbf')
-
-test_data = train_data = np.load("../Data/ProcessedRawData/TrainingSet/PvNormalDataNormalised.npy")
-test_data = torch.from_numpy(test_data)
-pred = predict_with_input_model(model, test_data, has_label=True)
-actual_labels = get_label(test_data)
-print(get_accuracy(actual_labels, pred))
-
-test_folder = "../Data/TestImages"
-test_arr = None
-for file in os.listdir(test_folder):
-    path = os.path.join(test_folder, file)
-    if test_arr is None:
-        test_arr = process_image(path, is_within_same_file=True)
+def crop_and_centralise_image_into_square(image):
+    width, height = image.size
+    crop_size = min(width, height)
+    if height > width:
+        box = (0, 0, width, width)
     else:
-        test_arr = np.vstack((test_arr, process_image(path, is_within_same_file=True)))
-pred = predict_with_input_model(model, test_arr, has_label=False)
-print(pred)
+        box = (0, 0, crop_size, crop_size)
+    cropped_image = image.crop(box)
+    return cropped_image
+
+image_path = "../../../../../Users/tasmiahaque/Desktop/PneumoniaDetectionProject/App/Models/Data/TestImages/Pneumonia.png"
+test_image = process_image(image_path)
+
+train_data = np.load("../../../../../Users/tasmiahaque/Desktop/PneumoniaDetectionProject/App/Models/Data/ProcessedRawData/TrainingSet/PvNormalDataNormalised.npy")
+train_data = torch.from_numpy(train_data)
+trained_model = train_model(train_data, kernel='rbf')
+
+print(predict_with_input_model(trained_model, test_image, has_label=False))

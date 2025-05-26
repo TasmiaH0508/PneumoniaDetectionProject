@@ -3,10 +3,22 @@ import os
 import numpy as np
 
 import torch
+from PIL import ImageOps, Image
+from matplotlib import pyplot as plt
 
 P_folder = "./Models/Data/RawData/PNEUMONIA"
 NORMAL_folder_1 = "./Models/Data/RawData/NORMAL"
 target_size = (256, 256)
+
+def pad_image(image):
+    padded_image = ImageOps.pad(image, target_size, method=Image.LANCZOS, color=0)
+    return padded_image
+
+def print_image(image):
+    plt.imshow(image, cmap='gray')
+    plt.title("Resulting Image")
+    plt.axis('off')
+    plt.show()
 
 def process_images(image_folder):
     ''''
@@ -53,21 +65,6 @@ def find_min_max_dimensions_in_image_folder(image_folder):
 
 #print(find_min_max_dimensions_in_image_folder(P_folder)) # (53824, 65536, 'PNEUMONIA_525.png', 'PNEUMONIA_1670.png')
 #print(find_min_max_dimensions_in_image_folder(NORMAL_folder_1)) # (53824, 65536, 'NORMAL_855.png', 'NORMAL_1486.png')
-
-import matplotlib.pyplot as plt
-from PIL import Image, ImageOps
-
-def pad_image(image_path):
-    image = Image.open(image_path).convert("L")
-    image = ImageOps.pad(image, target_size, method=Image.LANCZOS, color=0)
-    return image
-
-def print_padded_image(image_path):
-    padded_image = pad_image(image_path)
-    plt.imshow(padded_image, cmap='gray')
-    plt.title("Padded Image")
-    plt.axis('off')
-    plt.show()
 
 def pca(data):
     ''''

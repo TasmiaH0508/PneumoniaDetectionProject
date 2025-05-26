@@ -1,6 +1,4 @@
-App/Models/Data/RawData/
-
-App/Models/Data/ProcessedRawData/
+App/Models/Data/
 
 App/Models/CNNModel/
 
