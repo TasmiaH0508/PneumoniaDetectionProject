@@ -1,5 +1,6 @@
 from torch import nn
 import time
+
 from App.PrepareData import *
 from App.ComputeMetrics import *
 
@@ -14,7 +15,7 @@ device = (
 print(f"Using {device} device")
 
 class NeuralNetwork(nn.Module):
-    def __init__(self, num_input_features=1000):
+    def __init__(self, num_input_features):
         super().__init__()
         self.num_input_features = num_input_features
         self.L1 = nn.Linear(num_input_features, 968)
@@ -69,7 +70,7 @@ def train_model(model, epochs, train_data, optimiser, bias_present=True, use_old
 
     if save_weights:
         weights = model.state_dict()
-        torch.save(weights, file_name_to_write_to)  # overwrites old weights with new weights
+        torch.save(weights, file_name_to_write_to)
 
 def predict(model, threshold_prob, test_data, bias_present=True, has_label=True):
     ''''
@@ -107,9 +108,9 @@ def predict_with_saved_weights(test_data, threshold=0.65, has_bias=False, has_la
 
 def main():
     start = time.time()
-    train_data = np.load("../Data/ProcessedRawData/TrainingSet/PvNormalDataNormalised_var0.02.npy")
+    train_data = np.load("../Data/ProcessedRawData/TrainingSet/PvNormalDataNormalised.npy")
     train_data = torch.from_numpy(train_data)
-    test_data = np.load("../Data/ProcessedRawData/TestSet/PvNormalDataNormalised_var0.02.npy")
+    test_data = np.load("../Data/ProcessedRawData/TestSet/PvNormalDataNormalised.npy")
     test_data = torch.from_numpy(test_data)
 
     num_features_wo_bias = train_data.shape[1] - 2

@@ -1,10 +1,11 @@
 import numpy as np
 import pandas as pd
 import streamlit as st
-from PIL import Image, ImageOps
+from PIL import Image
 import altair as alt
 
-from App.Models.SVM.SVM import process_image, train_model, predict_with_input_model
+from App.AppUtils import display_description
+from App.Models.SVM.SVM import train_model, process_image, predict_with_input_model
 
 st.set_page_config(
     page_title="Predict Pneumonia with SVM",
@@ -117,23 +118,6 @@ def predict():
         prediction = prediction[0].item()
         st.session_state.prediction = prediction
         st.session_state.is_predicted = True
-
-def display_description():
-    st.title("Predict Pneumonia from x-rays 🩻")
-    st.markdown(
-        "In this project, several models(NN, SVM and CNN) were trained to predict pneumonia from chest x-ray images. "
-        "Feel free to use the best classifier trained so far below. Afterwards, you may experiment with the other "
-        "models in the dropdown on the left."
-    )
-    st.info(
-        """
-        ### ⭕️ Guidelines for images:
-        - **Only chest x-ray images** can be used.
-        - For best results, ensure that the chest x-ray images are **256 by 256 pixels** of the most appropriate regions. 
-        """
-    )
-    st.warning("⚠️ Use the models at your own discretion.")
-    st.subheader("⬇️ Upload your chest x-ray here:")
 
 def create_unstacked_bar_graph(data, labels, index, x_axis_label):
     chart_data = pd.DataFrame(
