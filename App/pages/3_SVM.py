@@ -1,10 +1,8 @@
 import numpy as np
-import pandas as pd
 import streamlit as st
 from PIL import Image
-import altair as alt
 
-from App.AppUtils import display_description
+from App.AppUtils import display_description, create_line_chart, create_unstacked_bar_graph
 from App.Models.SVM.SVM import train_model, process_image, predict_with_input_model
 
 st.set_page_config(
@@ -119,35 +117,6 @@ def predict():
         st.session_state.prediction = prediction
         st.session_state.is_predicted = True
 
-def create_unstacked_bar_graph(data, labels, index, x_axis_label):
-    chart_data = pd.DataFrame(
-        data,
-        columns=labels,
-        index=index
-    )
-    st.bar_chart(chart_data, x_label=x_axis_label, stack=False)
-
-def create_line_chart(data, labels, index, x_axis_label, domain):
-    # Prepare data
-    df = pd.DataFrame(data, columns=labels, index=index)
-    df[x_axis_label] = df.index
-    df = df.reset_index(drop=True)
-
-    # Melt DataFrame to long format for Altair
-    df_long = df.melt(id_vars=[x_axis_label], var_name="Metric", value_name="Score")
-
-    # Create Altair chart with controlled y-axis scale
-    chart = alt.Chart(df_long).mark_line(point=True).encode(
-        x=alt.X(f"{x_axis_label}:Q", title=x_axis_label),
-        y=alt.Y("Score:Q", title="Score", scale=alt.Scale(domain=domain)),
-        color="Metric:N"
-    ).properties(
-        width=700,
-        height=400,
-    )
-
-    st.altair_chart(chart, use_container_width=True)
-
 def display_findings():
     st.markdown(
         """
@@ -159,8 +128,6 @@ def display_findings():
         threshold variance(i.e. if the variance of the feature a feature across all samples is lower than the threshold 
         variance, the feature is removed). A feature-mapping was performed based on the training data set so that the 
         test set can be manipulated in the same way.
-
-        For more in-depth information about the datasets go to: About 🔎🔎
 
         ###### Fig 1: Bar graph showing how accuracy, precision and recall varies with polynomial degree for SVM 
         ###### classifier(linear) trained on Dataset A

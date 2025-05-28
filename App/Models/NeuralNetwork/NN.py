@@ -18,7 +18,7 @@ class NeuralNetwork(nn.Module):
     def __init__(self, num_input_features):
         super().__init__()
         self.num_input_features = num_input_features
-        self.L1 = nn.Linear(num_input_features, 968)
+        self.L1 = nn.Linear(num_input_features, 968, bias=False)
         self.L2 = nn.LeakyReLU(negative_slope=0.2)
         self.L3 = nn.Linear(968, 242)
         self.L4 = nn.LeakyReLU(negative_slope=0.2)
@@ -81,7 +81,7 @@ def predict(model, threshold_prob, test_data, bias_present=True, has_label=True)
     If label is present, set has_label=True
     '''
     test_data = get_data_without_bias_and_label(test_data, has_bias=bias_present, has_label=has_label)
-    pred = model.forward(test_data)
+    pred = model(test_data)
     pred = torch.where(pred >= threshold_prob, 1, 0)
     return pred
 
@@ -100,7 +100,7 @@ def predict_with_saved_weights(test_data, threshold=0.65, has_bias=False, has_la
         weights = torch.load(file_to_read_from, weights_only=True)
         model.load_state_dict(weights)
         test_data = get_data_without_bias_and_label(test_data, has_bias=has_bias, has_label=has_label)
-        pred = model.forward(test_data)
+        pred = model(test_data)
         pred = torch.where(pred >= threshold, 1, 0)
         return pred
     except FileNotFoundError:
@@ -110,6 +110,7 @@ def main():
     start = time.time()
     train_data = np.load("../Data/ProcessedRawData/TrainingSet/PvNormalDataNormalised.npy")
     train_data = torch.from_numpy(train_data)
+    print(train_data.dtype)
     test_data = np.load("../Data/ProcessedRawData/TestSet/PvNormalDataNormalised.npy")
     test_data = torch.from_numpy(test_data)
 
@@ -118,7 +119,7 @@ def main():
     model = NeuralNetwork(num_input_features=num_features_wo_bias)
     optimiser = torch.optim.Adam(model.parameters(), lr=0.001)
 
-    train_model(model, 350, train_data, optimiser, save_weights=True)
+    train_model(model, 350, train_data, optimiser, save_weights=False)
     print("Model has been trained")
 
     predictions = predict(model, 0.65, test_data)
