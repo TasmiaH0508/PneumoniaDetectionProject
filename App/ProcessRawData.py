@@ -31,8 +31,10 @@ def process_images(image_folder):
             # Load image
             image_path = os.path.join(image_folder, filename)
 
+            image = Image.open(image_path).convert('L')
+
             # Resize and pad image
-            img_resized = pad_image(image_path)
+            img_resized = pad_image(image)
 
             # Flatten to 1D feature vector
             img_array = np.array(img_resized).flatten()
@@ -62,9 +64,6 @@ def find_min_max_dimensions_in_image_folder(image_folder):
                 max_size = img_pixels
                 max_file_name = filename
     return min_size, max_size, min_file_name, max_file_name
-
-#print(find_min_max_dimensions_in_image_folder(P_folder)) # (53824, 65536, 'PNEUMONIA_525.png', 'PNEUMONIA_1670.png')
-#print(find_min_max_dimensions_in_image_folder(NORMAL_folder_1)) # (53824, 65536, 'NORMAL_855.png', 'NORMAL_1486.png')
 
 def pca(data):
     ''''
@@ -342,3 +341,5 @@ def prepare_data():
     np.save("./Models/Data/ProcessedRawData/Index/Indices_Kept_data_var0.02", indices_kept)
     np.save("./Models/Data/ProcessedRawData/MinData/min_across_all_features_var0.02", min_matrix)
     np.save("./Models/Data/ProcessedRawData/RangeData/range_across_all_features_var0.02", range_matrix)
+
+prepare_data()

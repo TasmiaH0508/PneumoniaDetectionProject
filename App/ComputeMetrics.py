@@ -65,11 +65,16 @@ def get_num_true_negatives(actual_labels, predicted_labels):
 def get_precision(actual_labels, predicted_labels):
     tp = get_num_true_positives(actual_labels, predicted_labels)
     fp = get_num_false_positives(actual_labels, predicted_labels)
+    if tp + fp == 0:
+        # since there are positive training examples given
+        return 0
     return tp / (tp + fp)
 
 def get_recall(actual_labels, predicted_labels):
     tp = get_num_true_positives(actual_labels, predicted_labels)
     fn = get_num_false_negatives(actual_labels, predicted_labels)
+    if tp + fn == 0:
+        return 0
     return tp / (tp + fn)
 
 def get_confusion_matrix(actual_labels, predicted_labels):

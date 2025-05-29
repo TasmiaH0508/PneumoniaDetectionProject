@@ -3,7 +3,6 @@ import streamlit as st
 import altair as alt
 
 def display_description():
-    st.title("Predict Pneumonia from x-rays 🩻")
     st.markdown(
         "In this project, several models(NN, SVM and CNN) were trained to predict pneumonia from chest x-ray images. "
         "Feel free to use the best classifier trained so far below. Afterwards, you may experiment with the other "

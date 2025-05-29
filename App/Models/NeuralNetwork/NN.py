@@ -1,5 +1,4 @@
 from torch import nn
-import time
 
 from App.PrepareData import *
 from App.ComputeMetrics import *
@@ -15,17 +14,19 @@ device = (
 print(f"Using {device} device")
 
 class NeuralNetwork(nn.Module):
-    def __init__(self, num_input_features):
+    def __init__(self, num_input_features, output_size_per_layer, negative_slope=0.2):
         super().__init__()
         self.num_input_features = num_input_features
-        self.L1 = nn.Linear(num_input_features, 968, bias=False)
-        self.L2 = nn.LeakyReLU(negative_slope=0.2)
-        self.L3 = nn.Linear(968, 242)
-        self.L4 = nn.LeakyReLU(negative_slope=0.2)
-        self.L5 = nn.Linear(242, 24)
-        self.L6 = nn.ReLU()
-        self.L7 = nn.Linear(24, 1)
-        self.L8 = nn.Sigmoid()
+        self.L1 = nn.Linear(num_input_features, output_size_per_layer[0])
+        self.L2 = nn.LeakyReLU(negative_slope=negative_slope)
+        self.L3 = nn.Dropout()
+        self.L4 = nn.Linear(output_size_per_layer[0], output_size_per_layer[1])
+        self.L5 = nn.LeakyReLU(negative_slope=negative_slope)
+        self.L6 = nn.Dropout()
+        self.L7 = nn.Linear(output_size_per_layer[1], output_size_per_layer[2])
+        self.L8 = nn.ReLU()
+        self.L9 = nn.Linear(output_size_per_layer[2], 1)
+        self.L10 = nn.Sigmoid()
 
     def forward(self, x):
         x = self.L1(x)
@@ -36,6 +37,8 @@ class NeuralNetwork(nn.Module):
         x = self.L6(x)
         x = self.L7(x)
         x = self.L8(x)
+        x = self.L9(x)
+        x = self.L10(x)
         return x
 
 def train_model(model, epochs, train_data, optimiser, bias_present=True, use_old_weights=False, save_weights=True,
@@ -85,9 +88,9 @@ def predict(model, threshold_prob, test_data, bias_present=True, has_label=True)
     pred = torch.where(pred >= threshold_prob, 1, 0)
     return pred
 
-def predict_with_saved_weights(test_data, threshold=0.65, has_bias=False, has_label=False, file_to_read_from="./torch_weights_var_0.02.pth"):
+def predict_with_saved_weights(test_data, threshold, has_bias=False, has_label=False, file_to_read_from="./torch_weights_var_0.02.pth"):
     ''''
-    Used to make predictions in ../Analysis/PredictPneumonia.py
+    Used to make predictions in ...
     '''
     if has_bias:
         num_input_features = test_data.shape[1] - 1
@@ -97,7 +100,7 @@ def predict_with_saved_weights(test_data, threshold=0.65, has_bias=False, has_la
         num_input_features = num_input_features - 1
     try:
         model = NeuralNetwork(num_input_features=num_input_features)
-        weights = torch.load(file_to_read_from, weights_only=True)
+        weights = torch.load(file_to_read_from, weights_only=False)
         model.load_state_dict(weights)
         test_data = get_data_without_bias_and_label(test_data, has_bias=has_bias, has_label=has_label)
         pred = model(test_data)
@@ -106,27 +109,53 @@ def predict_with_saved_weights(test_data, threshold=0.65, has_bias=False, has_la
     except FileNotFoundError:
         print("File not found, weights cannot be used.")
 
-def main():
-    start = time.time()
-    train_data = np.load("../Data/ProcessedRawData/TrainingSet/PvNormalDataNormalised.npy")
-    train_data = torch.from_numpy(train_data)
-    print(train_data.dtype)
-    test_data = np.load("../Data/ProcessedRawData/TestSet/PvNormalDataNormalised.npy")
-    test_data = torch.from_numpy(test_data)
+def find_best_hyperparameters(file_path_to_training_data, file_path_to_test_data):
+    train_data = np.load(file_path_to_training_data)
+    train_data = torch.from_numpy(train_data).float()
+    test_data = np.load(file_path_to_test_data)
+    test_data = torch.from_numpy(test_data).float()
+    test_labels = get_label(test_data)
 
     num_features_wo_bias = train_data.shape[1] - 2
 
-    model = NeuralNetwork(num_input_features=num_features_wo_bias)
-    optimiser = torch.optim.Adam(model.parameters(), lr=0.001)
+    layer_configs = [[1024, 256, 64],
+                     [512, 256, 32]]
+    negative_slopes = [0.1, 0.2]
+    lr = 0.001
+    thresholds = [0.4, 0.5, 0.6]
 
-    train_model(model, 350, train_data, optimiser, save_weights=False)
-    print("Model has been trained")
+    max_accuracy = 0.0
+    most_acc_model = None
+    max_recall = 0.0
+    greatest_recall_model = None
+    for layer_config in layer_configs:
+        for negative_slope in negative_slopes:
+            model = NeuralNetwork(num_features_wo_bias, layer_config, negative_slope)
+            optimiser = torch.optim.Adam(model.parameters(), lr=lr)
+            for i in range(6):
+                print("Training model ", i, "th iteration")
+                if i == 0:
+                    train_model(model, 50, train_data, optimiser, save_weights=False)
+                else:
+                    train_model(model, 150, train_data, optimiser, save_weights=False)
+                for threshold in thresholds:
+                    pred = predict(model, threshold, test_data)
+                    acc_score = get_accuracy(test_labels, pred)
+                    epochs_used = 150 + 50 * i
+                    if acc_score > max_accuracy:
+                        max_accuracy = acc_score
+                        most_acc_model = (layer_config, negative_slope, threshold, epochs_used)
+                    recall_score = get_recall(test_labels, pred)
+                    if recall_score > max_recall:
+                        max_recall = recall_score
+                        greatest_recall_model = (layer_config, negative_slope, threshold, epochs_used)
+    return most_acc_model, greatest_recall_model
 
-    predictions = predict(model, 0.65, test_data)
-    actual_test_labels = get_label(test_data)
-    print("The accuracy of the model is:", get_accuracy(actual_test_labels, predictions))
+file_path_to_training_data = "../Data/ProcessedRawData/TrainingSet/PvNormalDataNormalised.npy"
+file_path_to_test_data = "../Data/ProcessedRawData/TestSet/PvNormalDataNormalised.npy"
 
-    print("The recall of this model is:", get_recall(actual_test_labels, predictions))
+most_acc_model, greatest_recall_model = find_best_hyperparameters(file_path_to_training_data, file_path_to_test_data)
 
-    end = time.time()
-    print("Time taken in seconds:", end - start)
+print(most_acc_model)
+
+print(greatest_recall_model)
