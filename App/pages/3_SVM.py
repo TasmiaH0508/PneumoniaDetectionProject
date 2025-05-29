@@ -71,6 +71,7 @@ results_5_labels = ["accuracy for A", "precision for A", "recall for A", "f1-sco
 results_5_index = [1/2500, 1/3000, 1/4000, 1/6000, 1/8000, 1/1000, 1/900]
 
 def intro():
+    st.title("Predict Pneumonia from x-rays with SVM🩻")
     display_description()
     # for image upload
     uploaded_file = st.file_uploader("Choose an image", type=["png"])
