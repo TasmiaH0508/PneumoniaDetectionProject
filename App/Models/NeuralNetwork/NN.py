@@ -71,9 +71,10 @@ def train_model(model, epochs, train_data, optimiser, bias_present=True, use_old
         if i == epochs - 1:
             print("The loss is now:", loss_val.item())
 
-    if save_weights:
-        weights = model.state_dict()
-        torch.save(weights, file_name_to_write_to)
+            if save_weights:
+                weights = model.state_dict()
+                torch.save(weights, file_name_to_write_to)
+            return loss_val.item()
 
 def predict(model, threshold_prob, test_data, bias_present=True, has_label=True):
     ''''
@@ -118,8 +119,8 @@ def find_best_hyperparameters(file_path_to_training_data, file_path_to_test_data
 
     num_features_wo_bias = train_data.shape[1] - 2
 
-    layer_configs = [[1024, 256, 64],
-                     [512, 256, 32]]
+    layer_configs = ((1024, 256, 64),
+                     (3024, 256, 32))
     negative_slopes = [0.1, 0.2]
     lr = 0.001
     thresholds = [0.4, 0.5, 0.6]
@@ -128,34 +129,41 @@ def find_best_hyperparameters(file_path_to_training_data, file_path_to_test_data
     most_acc_model = None
     max_recall = 0.0
     greatest_recall_model = None
+    min_change_in_loss = 0.0001
     for layer_config in layer_configs:
         for negative_slope in negative_slopes:
+            loss, prev_loss = 0, float('inf')
             model = NeuralNetwork(num_features_wo_bias, layer_config, negative_slope)
             optimiser = torch.optim.Adam(model.parameters(), lr=lr)
             for i in range(6):
                 print("Training model ", i, "th iteration")
                 if i == 0:
-                    train_model(model, 50, train_data, optimiser, save_weights=False)
+                    loss = train_model(model, 150, train_data, optimiser, save_weights=False)
                 else:
-                    train_model(model, 150, train_data, optimiser, save_weights=False)
+                    loss = train_model(model, 50, train_data, optimiser, save_weights=False)
+                if loss >= prev_loss or prev_loss - loss <= min_change_in_loss:
+                    break
+                prev_loss = loss
                 for threshold in thresholds:
                     pred = predict(model, threshold, test_data)
                     acc_score = get_accuracy(test_labels, pred)
                     epochs_used = 150 + 50 * i
+                    recall_score = get_recall(test_labels, pred)
                     if acc_score > max_accuracy:
                         max_accuracy = acc_score
-                        most_acc_model = (layer_config, negative_slope, threshold, epochs_used)
-                    recall_score = get_recall(test_labels, pred)
+                        most_acc_model = (layer_config, negative_slope, threshold, epochs_used, acc_score, recall_score)
                     if recall_score > max_recall:
                         max_recall = recall_score
-                        greatest_recall_model = (layer_config, negative_slope, threshold, epochs_used)
+                        greatest_recall_model = (layer_config, negative_slope, threshold, epochs_used, acc_score, recall_score)
     return most_acc_model, greatest_recall_model
 
-file_path_to_training_data = "../Data/ProcessedRawData/TrainingSet/PvNormalDataNormalised.npy"
-file_path_to_test_data = "../Data/ProcessedRawData/TestSet/PvNormalDataNormalised.npy"
+"""""""""""
+# for data from "../Data/ProcessedRawData/TrainingSet/PvNormalDataNormalised.npy"
+most acc model = ((3024, 256, 32), 0.1, 0.6, 400, 92.3, 0.92625)
+highest_recall_model = ((3024, 256, 32), 0.1, 0.4, 150)
 
-most_acc_model, greatest_recall_model = find_best_hyperparameters(file_path_to_training_data, file_path_to_test_data)
 
-print(most_acc_model)
-
-print(greatest_recall_model)
+# for data from "../Data/ProcessedRawData/TrainingSet/PvNormalDataNormalised_var0.02.npy"
+((1024, 256, 64), 0.1, 0.6, 300, 91.81761399125547, 0.9275)
+((1024, 256, 64), 0.2, 0.4, 150, 49.968769519050596, 1.0)
+"""""
