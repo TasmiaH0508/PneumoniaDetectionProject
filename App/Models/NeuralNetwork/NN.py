@@ -14,7 +14,12 @@ device = (
 print(f"Using {device} device")
 
 class NeuralNetwork(nn.Module):
-    def __init__(self, num_input_features, output_size_per_layer, negative_slope=0.2):
+    # seed needed for reproducibility
+    def __init__(self, num_input_features, output_size_per_layer, seed=23, negative_slope=0.2):
+        torch.manual_seed(seed)
+        np.random.seed(seed)
+        torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.benchmark = False
         super().__init__()
         self.num_input_features = num_input_features
         self.L1 = nn.Linear(num_input_features, output_size_per_layer[0])
@@ -41,8 +46,7 @@ class NeuralNetwork(nn.Module):
         x = self.L10(x)
         return x
 
-def train_model(model, epochs, train_data, optimiser, bias_present=True, use_old_weights=False, save_weights=True,
-                file_name_to_read_from="./torch_weights.pth", file_name_to_write_to="./torch_weights.pth"):
+def train_model(model, epochs, train_data, optimiser, bias_present=True):
     ''''
     Trains model.
 
@@ -52,13 +56,6 @@ def train_model(model, epochs, train_data, optimiser, bias_present=True, use_old
     train_labels = get_label(train_data)
     train_labels = torch.reshape(train_labels, (train_labels.shape[0],1))
     train_data = get_data_without_bias_and_label(train_data, has_bias=bias_present)
-
-    if use_old_weights:
-        try:
-            state_dict = torch.load(file_name_to_read_from, weights_only=True)
-            model.load_state_dict(state_dict)
-        except FileNotFoundError:
-            print("File not found, old weights cannot be used.")
 
     # train
     loss = nn.BCELoss()
@@ -70,10 +67,6 @@ def train_model(model, epochs, train_data, optimiser, bias_present=True, use_old
         optimiser.step()
         if i == epochs - 1:
             print("The loss is now:", loss_val.item())
-
-            if save_weights:
-                weights = model.state_dict()
-                torch.save(weights, file_name_to_write_to)
             return loss_val.item()
 
 def predict(model, threshold_prob, test_data, bias_present=True, has_label=True):
@@ -89,28 +82,7 @@ def predict(model, threshold_prob, test_data, bias_present=True, has_label=True)
     pred = torch.where(pred >= threshold_prob, 1, 0)
     return pred
 
-def predict_with_saved_weights(test_data, threshold, has_bias=False, has_label=False, file_to_read_from="./torch_weights_var_0.02.pth"):
-    ''''
-    Used to make predictions in ...
-    '''
-    if has_bias:
-        num_input_features = test_data.shape[1] - 1
-    else:
-        num_input_features = test_data.shape[1]
-    if has_label:
-        num_input_features = num_input_features - 1
-    try:
-        model = NeuralNetwork(num_input_features=num_input_features)
-        weights = torch.load(file_to_read_from, weights_only=False)
-        model.load_state_dict(weights)
-        test_data = get_data_without_bias_and_label(test_data, has_bias=has_bias, has_label=has_label)
-        pred = model(test_data)
-        pred = torch.where(pred >= threshold, 1, 0)
-        return pred
-    except FileNotFoundError:
-        print("File not found, weights cannot be used.")
-
-def find_best_hyperparameters(file_path_to_training_data, file_path_to_test_data):
+def estimate_best_hyperparameters(file_path_to_training_data, file_path_to_test_data):
     train_data = np.load(file_path_to_training_data)
     train_data = torch.from_numpy(train_data).float()
     test_data = np.load(file_path_to_test_data)
@@ -121,7 +93,7 @@ def find_best_hyperparameters(file_path_to_training_data, file_path_to_test_data
 
     layer_configs = ((1024, 256, 64),
                      (3024, 256, 32))
-    negative_slopes = [0.1, 0.2]
+    negative_slopes = [0.1, 0.01]
     lr = 0.001
     thresholds = [0.4, 0.5, 0.6]
 
@@ -131,16 +103,17 @@ def find_best_hyperparameters(file_path_to_training_data, file_path_to_test_data
     greatest_recall_model = None
     min_change_in_loss = 0.0001
     for layer_config in layer_configs:
+        print("Trying config:", layer_config)
         for negative_slope in negative_slopes:
             loss, prev_loss = 0, float('inf')
-            model = NeuralNetwork(num_features_wo_bias, layer_config, negative_slope)
+            model = NeuralNetwork(num_features_wo_bias, layer_config, negative_slope=negative_slope)
             optimiser = torch.optim.Adam(model.parameters(), lr=lr)
             for i in range(6):
                 print("Training model ", i, "th iteration")
                 if i == 0:
-                    loss = train_model(model, 150, train_data, optimiser, save_weights=False)
+                    loss = train_model(model, 150, train_data, optimiser)
                 else:
-                    loss = train_model(model, 50, train_data, optimiser, save_weights=False)
+                    loss = train_model(model, 50, train_data, optimiser)
                 if loss >= prev_loss or prev_loss - loss <= min_change_in_loss:
                     break
                 prev_loss = loss
@@ -157,13 +130,24 @@ def find_best_hyperparameters(file_path_to_training_data, file_path_to_test_data
                         greatest_recall_model = (layer_config, negative_slope, threshold, epochs_used, acc_score, recall_score)
     return most_acc_model, greatest_recall_model
 
+(most_acc_model,
+ greatest_recall_model) = (
+    estimate_best_hyperparameters("../Data/ProcessedRawData/TrainingSet/PvNormalDataNormalised.npy",
+                                  "../Data/ProcessedRawData/TestSet/PvNormalDataNormalised.npy"))
+
+print(most_acc_model)
+print(greatest_recall_model)
+
 """""""""""
-# for data from "../Data/ProcessedRawData/TrainingSet/PvNormalDataNormalised.npy"
-most acc model = ((3024, 256, 32), 0.1, 0.6, 400, 92.3, 0.92625)
-highest_recall_model = ((3024, 256, 32), 0.1, 0.4, 150)
+"../Data/ProcessedRawData/TrainingSet/PvNormalDataNormalised.npy"
+seed = 423
+((3024, 256, 32), 0.01, 0.4, 250, 92.22361024359775, 0.93875)
+((3024, 256, 32), 0.01, 0.4, 150, 87.88257339163023, 0.979375)
 
+seed = 23
 
-# for data from "../Data/ProcessedRawData/TrainingSet/PvNormalDataNormalised_var0.02.npy"
-((1024, 256, 64), 0.1, 0.6, 300, 91.81761399125547, 0.9275)
-((1024, 256, 64), 0.2, 0.4, 150, 49.968769519050596, 1.0)
+"../Data/ProcessedRawData/TrainingSet/PvNormalDataNormalised_var0.02.npy"
+seed = 423
+((3024, 256, 32), 0.01, 0.4, 150, 91.88007495315428, 0.9325)
+((3024, 256, 32), 0.1, 0.4, 150, 49.968769519050596, 1.0)
 """""

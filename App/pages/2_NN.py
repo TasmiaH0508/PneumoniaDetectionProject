@@ -8,9 +8,6 @@ st.set_page_config(
     page_icon="📊",
 )
 
-# need to vary lr, feature variance, epochs, model
-# metrics: accuracy, precision, recall
-
 def intro():
     st.title("Predict Pneumonia from x-rays with Neural Network🩻")
     display_description()
@@ -22,5 +19,19 @@ def intro():
         st.session_state.uploaded_file = uploaded_file
 
     st.button("Predict Pneumonia",  help="Start classifying")
+
+    display_findings()
+
+
+def display_findings():
+    st.markdown(
+        """
+        ### 🔎 About the Neural Network
+        
+        ###### How is this different from CNN?
+        
+        Instead of feeding in a 
+        """
+    )
 
 intro()
