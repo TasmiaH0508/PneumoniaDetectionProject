@@ -15,23 +15,18 @@ print(f"Using {device} device")
 
 class NeuralNetwork(nn.Module):
     # seed needed for reproducibility
-    def __init__(self, num_input_features, output_size_per_layer, seed=23, negative_slope=0.2):
+    def __init__(self, num_input_features, output_size_per_layer, seed=23, negative_slope=0.2, dropout_probability=0.7):
         torch.manual_seed(seed)
         np.random.seed(seed)
         torch.backends.cudnn.deterministic = True
         torch.backends.cudnn.benchmark = False
         super().__init__()
         self.num_input_features = num_input_features
-        self.L1 = nn.Linear(num_input_features, output_size_per_layer[0])
+        self.L1 = nn.Linear(num_input_features, output_size_per_layer)
         self.L2 = nn.LeakyReLU(negative_slope=negative_slope)
-        self.L3 = nn.Dropout()
-        self.L4 = nn.Linear(output_size_per_layer[0], output_size_per_layer[1])
-        self.L5 = nn.LeakyReLU(negative_slope=negative_slope)
-        self.L6 = nn.Dropout()
-        self.L7 = nn.Linear(output_size_per_layer[1], output_size_per_layer[2])
-        self.L8 = nn.ReLU()
-        self.L9 = nn.Linear(output_size_per_layer[2], 1)
-        self.L10 = nn.Sigmoid()
+        self.L3 = nn.Dropout(p=dropout_probability)
+        self.L4 = nn.Linear(output_size_per_layer, 1)
+        self.L5 = nn.Sigmoid()
 
     def forward(self, x):
         x = self.L1(x)
@@ -39,11 +34,6 @@ class NeuralNetwork(nn.Module):
         x = self.L3(x)
         x = self.L4(x)
         x = self.L5(x)
-        x = self.L6(x)
-        x = self.L7(x)
-        x = self.L8(x)
-        x = self.L9(x)
-        x = self.L10(x)
         return x
 
 def train_model(model, epochs, train_data, optimiser, bias_present=True):
@@ -91,10 +81,9 @@ def estimate_best_hyperparameters(file_path_to_training_data, file_path_to_test_
 
     num_features_wo_bias = train_data.shape[1] - 2
 
-    layer_configs = ((1024, 256, 64),
-                     (3024, 256, 32))
-    negative_slopes = [0.1, 0.01]
-    lr = 0.001
+    layer_configs = (2048, )
+    negative_slopes = [0.1, 0.3]
+    lr = 0.0001
     thresholds = [0.4, 0.5, 0.6]
 
     max_accuracy = 0.0
@@ -108,7 +97,7 @@ def estimate_best_hyperparameters(file_path_to_training_data, file_path_to_test_
             loss, prev_loss = 0, float('inf')
             model = NeuralNetwork(num_features_wo_bias, layer_config, negative_slope=negative_slope)
             optimiser = torch.optim.Adam(model.parameters(), lr=lr)
-            for i in range(6):
+            for i in range(10):
                 print("Training model ", i, "th iteration")
                 if i == 0:
                     loss = train_model(model, 150, train_data, optimiser)
@@ -132,8 +121,8 @@ def estimate_best_hyperparameters(file_path_to_training_data, file_path_to_test_
 
 (most_acc_model,
  greatest_recall_model) = (
-    estimate_best_hyperparameters("../Data/ProcessedRawData/TrainingSet/PvNormalDataNormalised.npy",
-                                  "../Data/ProcessedRawData/TestSet/PvNormalDataNormalised.npy"))
+    estimate_best_hyperparameters("../Data/ProcessedRawData/TrainingSet/PvNormalDataNormalised_var0.02.npy",
+                                  "../Data/ProcessedRawData/TestSet/PvNormalDataNormalised_var0.02.npy"))
 
 print(most_acc_model)
 print(greatest_recall_model)
@@ -150,4 +139,32 @@ seed = 23
 seed = 423
 ((3024, 256, 32), 0.01, 0.4, 150, 91.88007495315428, 0.9325)
 ((3024, 256, 32), 0.1, 0.4, 150, 49.968769519050596, 1.0)
+
+Use single layer
+"../Data/ProcessedRawData/TrainingSet/PvNormalDataNormalised.npy"
+(, 0.1, 0.6, 400, 92.59837601499063, 0.93875)
+(, 0.1, 0.4, 200, 91.84884447220487, 0.96125)
+
+(3096, 0.1, 0.6, 200, 92.34853216739538, 0.9175)
+(3096, 0.1, 0.4, 150, 91.66146158650844, 0.9525)
+
+(2048, 0.2, 0.6, 300, 92.3797626483448, 0.921875)
+(3096, 0.2, 0.4, 150, 91.78638351030605, 0.955625)
+
+(2048, 0.3, 0.6, 450, 92.4109931292942, 0.925)
+(2048, 0.1, 0.4, 150, 91.69269206745784, 0.954375)
+
+(2048, 0.3, 0.6, 500, 92.473454091193, 0.93125)
+(2048, 0.1, 0.4, 250, 90.94316052467208, 0.955625)
+
+p=0.5
+(2048, 0.3, 0.6, 500, 92.473454091193, 0.93125)
+(2048, 0.1, 0.4, 250, 90.94316052467208, 0.955625)
+p=0.3
+(2048, 0.3, 0.6, 600, 92.66083697688944, 0.928125)
+(2048, 0.1, 0.4, 200, 90.88069956277327, 0.96)
+
+p=0.7
+(2048, 0.1, 0.4, 450, 92.28607120549657, 0.94875)
+(2048, 0.1, 0.4, 200, 89.631480324797, 0.96625)
 """""
