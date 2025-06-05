@@ -1,3 +1,4 @@
+from sklearn.metrics import accuracy_score
 from torch import nn
 
 from App.PrepareData import *
@@ -14,29 +15,18 @@ device = (
 print(f"Using {device} device")
 
 class NeuralNetwork(nn.Module):
-    # seed needed for reproducibility
-    def __init__(self, num_input_features, output_size_per_layer, seed=23, negative_slope=0.2, dropout_probability=0.7):
-        torch.manual_seed(seed)
-        np.random.seed(seed)
-        torch.backends.cudnn.deterministic = True
-        torch.backends.cudnn.benchmark = False
+    def __init__(self, num_input_features, output_size_per_layer=199, seed=123, negative_slope=0.2, dropout_probability=0.7):
         super().__init__()
         self.num_input_features = num_input_features
-        self.L1 = nn.Linear(num_input_features, output_size_per_layer)
-        self.L2 = nn.LeakyReLU(negative_slope=negative_slope)
-        self.L3 = nn.Dropout(p=dropout_probability)
-        self.L4 = nn.Linear(output_size_per_layer, 1)
-        self.L5 = nn.Sigmoid()
+        self.L1 = nn.Linear(num_input_features, 1)
+        self.L2 = nn.Sigmoid()
 
     def forward(self, x):
         x = self.L1(x)
         x = self.L2(x)
-        x = self.L3(x)
-        x = self.L4(x)
-        x = self.L5(x)
         return x
 
-def train_model(model, epochs, train_data, optimiser, bias_present=True):
+def train_model(model, epochs, train_data, test_data, lr, bias_present_for_training_set=True, bias_present_for_testing_set=True):
     ''''
     Trains model.
 
@@ -45,19 +35,45 @@ def train_model(model, epochs, train_data, optimiser, bias_present=True):
     # prepare data
     train_labels = get_label(train_data)
     train_labels = torch.reshape(train_labels, (train_labels.shape[0],1))
-    train_data = get_data_without_bias_and_label(train_data, has_bias=bias_present)
+    train_data = get_data_without_bias_and_label(train_data, has_bias=bias_present_for_training_set)
+    test_labels = get_label(test_data)
+    test_data = get_data_without_bias_and_label(test_data, has_bias=bias_present_for_testing_set)
 
     # train
     loss = nn.BCELoss()
+    optimiser = torch.optim.Adam(model.parameters(), lr=lr)
+    max_accuracy_model = None
+    max_accuracy_score = 0
+    max_recall_model = None
+    max_recall_score = 0
+    accuracy_score_for_highest_recall_model = 0
+    thresholds = [0.4, 0.5, 0.6]
     for i in range(epochs):
         optimiser.zero_grad()
         y_pred = model.forward(train_data)
         loss_val = loss(y_pred, train_labels)
-        loss_val.backward()
-        optimiser.step()
+        if i % 100 == 0:
+            print(loss_val.item())
         if i == epochs - 1:
             print("The loss is now:", loss_val.item())
-            return loss_val.item()
+            print("Epochs used:", i + 1)
+        loss_val.backward()
+        optimiser.step()
+        pred = model(test_data)
+        for threshold in thresholds:
+            pred_given_threshold = torch.where(pred >= threshold, 1, 0)
+            accuracy_score = get_accuracy(test_labels, pred_given_threshold)
+            recall_score = get_recall(test_labels, pred_given_threshold)
+            if accuracy_score > max_accuracy_score:
+                max_accuracy_score = accuracy_score
+                iterations = i + 1
+                max_accuracy_model = (lr, iterations)
+            if recall_score > max_recall_score and accuracy_score > 90:
+                accuracy_score_for_highest_recall_model = accuracy_score
+                max_recall_score = recall_score
+                iterations = i + 1
+                max_recall_model = (lr, iterations)
+    return (max_accuracy_score, max_accuracy_model, max_recall_score, accuracy_score_for_highest_recall_model, max_recall_model)
 
 def predict(model, threshold_prob, test_data, bias_present=True, has_label=True):
     ''''
@@ -81,8 +97,8 @@ def estimate_best_hyperparameters(file_path_to_training_data, file_path_to_test_
 
     num_features_wo_bias = train_data.shape[1] - 2
 
-    layer_configs = (2048, )
-    negative_slopes = [0.1, 0.3]
+    layer_configs = (1024, )
+    negative_slopes = [0.1, 0.01]
     lr = 0.0001
     thresholds = [0.4, 0.5, 0.6]
 
@@ -90,9 +106,8 @@ def estimate_best_hyperparameters(file_path_to_training_data, file_path_to_test_
     most_acc_model = None
     max_recall = 0.0
     greatest_recall_model = None
-    min_change_in_loss = 0.0001
+    min_change_in_loss = 0.001
     for layer_config in layer_configs:
-        print("Trying config:", layer_config)
         for negative_slope in negative_slopes:
             loss, prev_loss = 0, float('inf')
             model = NeuralNetwork(num_features_wo_bias, layer_config, negative_slope=negative_slope)
@@ -100,9 +115,9 @@ def estimate_best_hyperparameters(file_path_to_training_data, file_path_to_test_
             for i in range(10):
                 print("Training model ", i, "th iteration")
                 if i == 0:
-                    loss = train_model(model, 150, train_data, optimiser)
+                    loss = train_model(model, 150, train_data, optimiser, )
                 else:
-                    loss = train_model(model, 50, train_data, optimiser)
+                    loss = train_model(model, 50, train_data, optimiser, )
                 if loss >= prev_loss or prev_loss - loss <= min_change_in_loss:
                     break
                 prev_loss = loss
@@ -113,58 +128,32 @@ def estimate_best_hyperparameters(file_path_to_training_data, file_path_to_test_
                     recall_score = get_recall(test_labels, pred)
                     if acc_score > max_accuracy:
                         max_accuracy = acc_score
-                        most_acc_model = (layer_config, negative_slope, threshold, epochs_used, acc_score, recall_score)
+                        most_acc_model = (layer_config, negative_slope, threshold, epochs_used, lr, acc_score, recall_score)
                     if recall_score > max_recall:
                         max_recall = recall_score
-                        greatest_recall_model = (layer_config, negative_slope, threshold, epochs_used, acc_score, recall_score)
+                        greatest_recall_model = (layer_config, negative_slope, threshold, epochs_used, lr, acc_score, recall_score)
     return most_acc_model, greatest_recall_model
 
-(most_acc_model,
- greatest_recall_model) = (
-    estimate_best_hyperparameters("../Data/ProcessedRawData/TrainingSet/PvNormalDataNormalised_var0.02.npy",
-                                  "../Data/ProcessedRawData/TestSet/PvNormalDataNormalised_var0.02.npy"))
+file_path_to_training_data = "../Data/ProcessedRawData/TrainingSet/PvNormalDataNormalised_var0.02.npy"
+file_path_to_test_data = "../Data/ProcessedRawData/TestSet/PvNormalDataNormalised_var0.02.npy"
+train_data = np.load(file_path_to_training_data)
+train_data = torch.from_numpy(train_data).float()
+test_data = np.load(file_path_to_test_data)
+test_data = torch.from_numpy(test_data).float()
 
-print(most_acc_model)
-print(greatest_recall_model)
+lr = 0.001
+num_features_wo_bias = train_data.shape[1] - 2
+
+model = NeuralNetwork(num_features_wo_bias)
+print(train_model(model, epochs=3500, train_data=train_data, test_data=test_data, lr=lr))
 
 """""""""""
 "../Data/ProcessedRawData/TrainingSet/PvNormalDataNormalised.npy"
-seed = 423
-((3024, 256, 32), 0.01, 0.4, 250, 92.22361024359775, 0.93875)
-((3024, 256, 32), 0.01, 0.4, 150, 87.88257339163023, 0.979375)
-
-seed = 23
+(92.84821986258588, (0.0005, 600), 0.965625, 90.0999375390381, (0.0005, 78))
+(92.78575890068707, (0.001, 498), 0.95875, 91.84884447220487, (0.001, 93))
+(92.72329793878826, (0.001, 430), 0.958125, 92.03622735790131, (0.001, 110))
 
 "../Data/ProcessedRawData/TrainingSet/PvNormalDataNormalised_var0.02.npy"
-seed = 423
-((3024, 256, 32), 0.01, 0.4, 150, 91.88007495315428, 0.9325)
-((3024, 256, 32), 0.1, 0.4, 150, 49.968769519050596, 1.0)
-
-Use single layer
-"../Data/ProcessedRawData/TrainingSet/PvNormalDataNormalised.npy"
-(, 0.1, 0.6, 400, 92.59837601499063, 0.93875)
-(, 0.1, 0.4, 200, 91.84884447220487, 0.96125)
-
-(3096, 0.1, 0.6, 200, 92.34853216739538, 0.9175)
-(3096, 0.1, 0.4, 150, 91.66146158650844, 0.9525)
-
-(2048, 0.2, 0.6, 300, 92.3797626483448, 0.921875)
-(3096, 0.2, 0.4, 150, 91.78638351030605, 0.955625)
-
-(2048, 0.3, 0.6, 450, 92.4109931292942, 0.925)
-(2048, 0.1, 0.4, 150, 91.69269206745784, 0.954375)
-
-(2048, 0.3, 0.6, 500, 92.473454091193, 0.93125)
-(2048, 0.1, 0.4, 250, 90.94316052467208, 0.955625)
-
-p=0.5
-(2048, 0.3, 0.6, 500, 92.473454091193, 0.93125)
-(2048, 0.1, 0.4, 250, 90.94316052467208, 0.955625)
-p=0.3
-(2048, 0.3, 0.6, 600, 92.66083697688944, 0.928125)
-(2048, 0.1, 0.4, 200, 90.88069956277327, 0.96)
-
-p=0.7
-(2048, 0.1, 0.4, 450, 92.28607120549657, 0.94875)
-(2048, 0.1, 0.4, 200, 89.631480324797, 0.96625)
+Epochs used: 3500
+(92.50468457214241, (0.001, 2891), 0.959375, 90.28732042473455, (0.001, 63))
 """""
