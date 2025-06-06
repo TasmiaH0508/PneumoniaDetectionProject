@@ -1,6 +1,12 @@
+import numpy as np
 import pandas as pd
 import streamlit as st
 import altair as alt
+import torch
+from PIL import Image
+
+from App.ProcessRawData import min_max_normalise_with_predefined_params, pad_image
+
 
 def display_description():
     st.markdown(
@@ -46,3 +52,20 @@ def create_unstacked_bar_graph(data, labels, index, x_axis_label):
         index=index
     )
     st.bar_chart(chart_data, x_label=x_axis_label, stack=False)
+
+def process_image(image_path):
+    image = Image.open(image_path).convert('L')
+    padded_and_cropped_image = pad_image(image)
+    image_array = np.array(padded_and_cropped_image).flatten()
+    # need the scaling
+    image_array = image_array / 255
+    image_array = np.reshape(image_array, (1, image_array.shape[0]))
+    min_matrix = np.load("App/Models/Data/ProcessedRawData/MinData/min_across_all_features.npy")
+    min_matrix = np.reshape(min_matrix, (image_array.shape[0], image_array.shape[1]))
+    range_matrix = np.load("App/Models/Data/ProcessedRawData/RangeData/range_across_all_features.npy")
+    range_matrix = np.reshape(range_matrix, (image_array.shape[0], image_array.shape[1]))
+    normalised_arr = min_max_normalise_with_predefined_params(image_array, min_matrix, range_matrix)
+    bias = np.ones((1, 1))
+    normalised_arr = np.hstack((bias, normalised_arr))
+    normalised_arr = torch.from_numpy(normalised_arr)
+    return normalised_arr

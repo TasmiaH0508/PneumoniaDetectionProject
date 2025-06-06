@@ -1,4 +1,3 @@
-from sklearn.metrics import accuracy_score
 from torch import nn
 
 from App.PrepareData import *
@@ -26,12 +25,7 @@ class NeuralNetwork(nn.Module):
         x = self.L2(x)
         return x
 
-def train_model(model, epochs, train_data, test_data, lr, bias_present_for_training_set=True, bias_present_for_testing_set=True):
-    ''''
-    Trains model.
-
-    The train_data param is a tensor that must also include the label.
-    '''
+def train_model(model, epochs, train_data, test_data, lr, bias_present_for_training_set=True, bias_present_for_testing_set=True, min_accuracy_for_highest_recall_model=92, save_model=False):
     # prepare data
     train_labels = get_label(train_data)
     train_labels = torch.reshape(train_labels, (train_labels.shape[0],1))
@@ -46,7 +40,6 @@ def train_model(model, epochs, train_data, test_data, lr, bias_present_for_train
     max_accuracy_score = 0
     max_recall_model = None
     max_recall_score = 0
-    accuracy_score_for_highest_recall_model = 0
     thresholds = [0.4, 0.5, 0.6]
     for i in range(epochs):
         optimiser.zero_grad()
@@ -67,13 +60,29 @@ def train_model(model, epochs, train_data, test_data, lr, bias_present_for_train
             if accuracy_score > max_accuracy_score:
                 max_accuracy_score = accuracy_score
                 iterations = i + 1
-                max_accuracy_model = (lr, iterations)
-            if recall_score > max_recall_score and accuracy_score > 90:
-                accuracy_score_for_highest_recall_model = accuracy_score
+                max_accuracy_model = (lr, iterations, threshold, accuracy_score, recall_score)
+                if save_model:
+                    torch.save(model.state_dict(), "model_max_accuracy.pth")
+            if recall_score > max_recall_score and accuracy_score > min_accuracy_for_highest_recall_model:
                 max_recall_score = recall_score
                 iterations = i + 1
-                max_recall_model = (lr, iterations)
-    return (max_accuracy_score, max_accuracy_model, max_recall_score, accuracy_score_for_highest_recall_model, max_recall_model)
+                max_recall_model = (lr, iterations, threshold, accuracy_score, recall_score)
+                if save_model:
+                    torch.save(model.state_dict(), "model_max_recall.pth")
+    return (max_accuracy_model, max_recall_model)
+
+def predict_with_saved_model(processed_image_arr):
+    num_input_features = 65536
+    model = NeuralNetwork(num_input_features)
+    weights = torch.load("App/Models/NeuralNetwork/model_max_recall.pth", weights_only=True)
+    model.load_state_dict(weights)
+    model.eval()
+
+    threshold_prob = 0.4
+    input_arr = processed_image_arr.float()
+    pred = predict(model, threshold_prob, input_arr, has_label=False)
+    pred = pred[0].item()
+    return pred
 
 def predict(model, threshold_prob, test_data, bias_present=True, has_label=True):
     ''''
@@ -134,26 +143,13 @@ def estimate_best_hyperparameters(file_path_to_training_data, file_path_to_test_
                         greatest_recall_model = (layer_config, negative_slope, threshold, epochs_used, lr, acc_score, recall_score)
     return most_acc_model, greatest_recall_model
 
-file_path_to_training_data = "../Data/ProcessedRawData/TrainingSet/PvNormalDataNormalised_var0.02.npy"
-file_path_to_test_data = "../Data/ProcessedRawData/TestSet/PvNormalDataNormalised_var0.02.npy"
-train_data = np.load(file_path_to_training_data)
-train_data = torch.from_numpy(train_data).float()
-test_data = np.load(file_path_to_test_data)
-test_data = torch.from_numpy(test_data).float()
-
-lr = 0.001
-num_features_wo_bias = train_data.shape[1] - 2
-
-model = NeuralNetwork(num_features_wo_bias)
-print(train_model(model, epochs=3500, train_data=train_data, test_data=test_data, lr=lr))
-
 """""""""""
 "../Data/ProcessedRawData/TrainingSet/PvNormalDataNormalised.npy"
-(92.84821986258588, (0.0005, 600), 0.965625, 90.0999375390381, (0.0005, 78))
-(92.78575890068707, (0.001, 498), 0.95875, 91.84884447220487, (0.001, 93))
-(92.72329793878826, (0.001, 430), 0.958125, 92.03622735790131, (0.001, 110))
+((0.001, 588, 0.6, 92.87945034353528, 0.939375), (0.001, 142, 0.4, 92.06745783885071, 0.96))
 
 "../Data/ProcessedRawData/TrainingSet/PvNormalDataNormalised_var0.02.npy"
-Epochs used: 3500
-(92.50468457214241, (0.001, 2891), 0.959375, 90.28732042473455, (0.001, 63))
+((0.001, 530, 0.6, 92.50468457214241, 0.9275), (0.001, 66, 0.4, 92.16114928169894, 0.945))
+
+"../Data/ProcessedRawData/TrainingSet/PvNormalDataNormalised_var0.01.npy"
+((0.001, 334, 0.6, 92.50468457214241, 0.944375), (0.001, 208, 0.5, 92.0049968769519, 0.956875))
 """""

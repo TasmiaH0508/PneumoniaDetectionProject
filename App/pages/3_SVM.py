@@ -2,8 +2,8 @@ import numpy as np
 import streamlit as st
 from PIL import Image
 
-from App.AppUtils import display_description, create_line_chart, create_unstacked_bar_graph
-from App.Models.SVM.SVM import train_model, process_image, predict_with_input_model
+from App.AppUtils import display_description, create_line_chart, create_unstacked_bar_graph, process_image
+from App.Models.SVM.SVM import train_model, predict_with_input_model
 
 st.set_page_config(
     page_title="Predict Pneumonia with SVM",
