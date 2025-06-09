@@ -59,10 +59,11 @@ def display_findings():
     st.markdown(
         """
         ### 🔎 About the Neural Network
-        
-        ###### How is this different from CNN?
-        
-        Instead of feeding in a 
+        """
+    )
+    st.info(
+        """
+        ### How exactly is this different from CNN?
         """
     )
 

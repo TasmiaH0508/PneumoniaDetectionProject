@@ -14,7 +14,7 @@ device = (
 print(f"Using {device} device")
 
 class NeuralNetwork(nn.Module):
-    def __init__(self, num_input_features, output_size_per_layer=199, seed=123, negative_slope=0.2, dropout_probability=0.7):
+    def __init__(self, num_input_features):
         super().__init__()
         self.num_input_features = num_input_features
         self.L1 = nn.Linear(num_input_features, 1)
@@ -97,59 +97,24 @@ def predict(model, threshold_prob, test_data, bias_present=True, has_label=True)
     pred = torch.where(pred >= threshold_prob, 1, 0)
     return pred
 
-def estimate_best_hyperparameters(file_path_to_training_data, file_path_to_test_data):
-    train_data = np.load(file_path_to_training_data)
-    train_data = torch.from_numpy(train_data).float()
-    test_data = np.load(file_path_to_test_data)
-    test_data = torch.from_numpy(test_data).float()
-    test_labels = get_label(test_data)
+file_path_to_training_data = "../Data/ProcessedRawData/TrainingSet/PvNormalDataNormalised_var0.02.npy"
+training_data = np.load(file_path_to_training_data)
+training_data = torch.from_numpy(training_data).float()
+file_path_to_test_data = "../Data/ProcessedRawData/TestSet/PvNormalDataNormalised_var0.02.npy"
+test_data = np.load(file_path_to_test_data)
+test_data = torch.from_numpy(test_data).float()
 
-    num_features_wo_bias = train_data.shape[1] - 2
+num_input_features = training_data.shape[1] - 2
+model = NeuralNetwork(num_input_features)
 
-    layer_configs = (1024, )
-    negative_slopes = [0.1, 0.01]
-    lr = 0.0001
-    thresholds = [0.4, 0.5, 0.6]
+most_acc_model, most_recall_method = train_model(model, 600, training_data, test_data, 0.001, save_model=False)
+print(most_acc_model, most_recall_method)
 
-    max_accuracy = 0.0
-    most_acc_model = None
-    max_recall = 0.0
-    greatest_recall_model = None
-    min_change_in_loss = 0.001
-    for layer_config in layer_configs:
-        for negative_slope in negative_slopes:
-            loss, prev_loss = 0, float('inf')
-            model = NeuralNetwork(num_features_wo_bias, layer_config, negative_slope=negative_slope)
-            optimiser = torch.optim.Adam(model.parameters(), lr=lr)
-            for i in range(10):
-                print("Training model ", i, "th iteration")
-                if i == 0:
-                    loss = train_model(model, 150, train_data, optimiser, )
-                else:
-                    loss = train_model(model, 50, train_data, optimiser, )
-                if loss >= prev_loss or prev_loss - loss <= min_change_in_loss:
-                    break
-                prev_loss = loss
-                for threshold in thresholds:
-                    pred = predict(model, threshold, test_data)
-                    acc_score = get_accuracy(test_labels, pred)
-                    epochs_used = 150 + 50 * i
-                    recall_score = get_recall(test_labels, pred)
-                    if acc_score > max_accuracy:
-                        max_accuracy = acc_score
-                        most_acc_model = (layer_config, negative_slope, threshold, epochs_used, lr, acc_score, recall_score)
-                    if recall_score > max_recall:
-                        max_recall = recall_score
-                        greatest_recall_model = (layer_config, negative_slope, threshold, epochs_used, lr, acc_score, recall_score)
-    return most_acc_model, greatest_recall_model
+"""
+../Data/ProcessedRawData/TrainingSet/PvNormalDataNormalised.npy
+single layer
+(0.001, 518, 0.5, 95.47395388556788, 0.9512820512820512) (0.001, 430, 0.4, 95.2604611443211, 0.9632478632478633)
 
-"""""""""""
-"../Data/ProcessedRawData/TrainingSet/PvNormalDataNormalised.npy"
-((0.001, 588, 0.6, 92.87945034353528, 0.939375), (0.001, 142, 0.4, 92.06745783885071, 0.96))
-
-"../Data/ProcessedRawData/TrainingSet/PvNormalDataNormalised_var0.02.npy"
-((0.001, 530, 0.6, 92.50468457214241, 0.9275), (0.001, 66, 0.4, 92.16114928169894, 0.945))
-
-"../Data/ProcessedRawData/TrainingSet/PvNormalDataNormalised_var0.01.npy"
-((0.001, 334, 0.6, 92.50468457214241, 0.944375), (0.001, 208, 0.5, 92.0049968769519, 0.956875))
-"""""
+../Data/ProcessedRawData/TrainingSet/PvNormalDataNormalised_var0.02.npy
+(0.001, 587, 0.5, 95.21776259607174, 0.9538461538461539) (0.001, 341, 0.4, 94.49188727583262, 0.9658119658119658)
+"""
