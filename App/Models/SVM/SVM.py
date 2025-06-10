@@ -32,20 +32,3 @@ def predict_with_input_model(clf, test_data, has_label=True):
     predicted = clf.predict(test_data_wo_bias_and_label)
     predicted = torch.from_numpy(predicted)
     return predicted
-
-
-file_path_to_training_data = "../Data/ProcessedRawData/TrainingSet/PvNormalDataNormalised.npy"
-training_data = np.load(file_path_to_training_data)
-training_data = torch.from_numpy(training_data)
-
-file_path_to_test_data = "../Data/ProcessedRawData/TestSet/PvNormalDataNormalisednpy"
-test_data = np.load(file_path_to_test_data)
-test_data = torch.from_numpy(test_data)
-label = get_label(test_data)
-
-model = train_model(training_data, kernel='linear', degree=1)
-
-predicted = predict_with_input_model(model, test_data)
-print(get_accuracy(label, predicted))
-print(get_precision(label, predicted))
-print(get_recall(label, predicted))

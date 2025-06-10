@@ -341,5 +341,3 @@ def prepare_data():
     np.save("./Models/Data/ProcessedRawData/Index/Indices_Kept_data_var0.02", indices_kept)
     np.save("./Models/Data/ProcessedRawData/MinData/min_across_all_features_var0.02", min_matrix)
     np.save("./Models/Data/ProcessedRawData/RangeData/range_across_all_features_var0.02", range_matrix)
-
-prepare_data()

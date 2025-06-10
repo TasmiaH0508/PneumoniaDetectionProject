@@ -12,17 +12,17 @@ st.set_page_config(
 
 # Results
 # for linear kernel, for data with no features removed
-results_1 = np.array([[0.91131, 0.91131, 0.91131],
-                    [0.89, 0.89, 0.89],
-                    [0.94, 0.94, 0.94]])
+results_1 = np.array([[0.9432, 0.9431, 0.9432],
+                    [0.9390, 0.9390, 0.9390],
+                    [0.9479, 0.9479, 0.9479]])
 results_1 = np.transpose(results_1)
 results_1_labels = ["accuracy", "precision", "recall"]
 results_1_index = [1, 2, 3]
 
 # for gaussian kernel, varying gamma, with no features removed
-results_2 = np.array([[0.931, 0.932, 0.930, 0.924, 0.923, 0.923, 0.919],
-                      [0.918, 0.920, 0.919, 0.911, 0.912, 0.903, 0.896],
-                      [0.948, 0.946, 0.944, 0.940, 0.937, 0.9475, 0.9475]])
+results_2 = np.array([[0.952, 0.952, 0.953, 0.952, 0.948, 0.948, 0.947],
+                      [0.955, 0.956, 0.958, 0.955, 0.951, 0.949, 0.948],
+                      [0.949, 0.948, 0.948, 0.948, 0.945, 0.947, 0.947]])
 results_1_reference = results_1[0]
 results_1_reference = np.reshape(results_1_reference, (results_1_reference.shape[0], 1))
 results_1_reference = np.repeat(results_1_reference, results_2.shape[1], axis=1)
@@ -33,17 +33,17 @@ results_2_labels = ["accuracy", "precision", "recall",
 results_2_index = [1/2500, 1/3000, 1/4000, 1/6000, 1/8000, 1/1000, 1/900]
 
 # for linear kernel, for data with features removed
-results_3 = np.array([[0.909, 0.909, 0.909],
-                      [0.892, 0.892, 0.892],
-                      [0.931, 0.931, 0.931]])
+results_3 = np.array([[0.939, 0.939, 0.939],
+                      [0.928, 0.928, 0.928],
+                      [0.950, 0.950, 0.950]])
 results_3 = np.transpose(results_3)
 results_3_labels = results_1_labels
 results_3_index = [1, 2, 3]
 
 # for gaussian kernel, for data with features removed
-results_4 = np.array([[0.930, 0.929, 0.928, 0.923, 0.922, 0.924, 0.922],
-                      [0.920, 0.920, 0.921, 0.915, 0.913, 0.909, 0.907],
-                      [0.941, 0.940, 0.936, 0.934, 0.932, 0.942, 0.941]])
+results_4 = np.array([[0.953, 0.950, 0.949, 0.943, 0.942, 0.953, 0.953],
+                      [0.958, 0.957, 0.955, 0.944, 0.944, 0.962, 0.960],
+                      [0.946, 0.942, 0.943, 0.942, 0.939, 0.944, 0.946]])
 results_3_reference = results_3[0]
 results_3_reference = np.reshape(results_3_reference, (results_3_reference.shape[0], 1))
 results_3_reference = np.repeat(results_3_reference, 7, axis=1)
@@ -146,7 +146,7 @@ def display_findings():
         """
     )
 
-    create_line_chart(results_2, results_2_labels, results_2_index, "Gamma", [0.86, 1])
+    create_line_chart(results_2, results_2_labels, results_2_index, "Gamma", [0.92, 0.98])
 
     st.markdown(
         """
@@ -169,7 +169,7 @@ def display_findings():
         """
     )
     # gaussian kernel, dataset B
-    create_line_chart(results_4, results_4_labels, results_4_index, "Gamma", [0.86, 0.96])
+    create_line_chart(results_4, results_4_labels, results_4_index, "Gamma", [0.92, 0.98])
     st.markdown(
         """
         A similar trend is observed here again, where the precision, recall and accuracy is higher when the gaussian 
@@ -179,7 +179,7 @@ def display_findings():
         """
     )
     # comparison of classifiers(gaussian) trained on datasets a and b
-    create_line_chart(results_5, results_5_labels, results_5_index, "Gamma", [0.86, 0.96])
+    create_line_chart(results_5, results_5_labels, results_5_index, "Gamma", [0.92, 0.98])
     st.markdown(
         """
         Precision was higher for the classifier trained on dataset B. However, the classifier trained on dataset A 
