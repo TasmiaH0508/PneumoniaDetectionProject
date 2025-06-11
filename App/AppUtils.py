@@ -54,6 +54,11 @@ def create_unstacked_bar_graph(data, labels, index, x_axis_label):
     st.bar_chart(chart_data, x_label=x_axis_label, stack=False)
 
 def process_image(image_path):
+    '''
+    Returns image as an array after it has been processed for NN and SVM
+    :param image_path: path to image
+    :return: image as an array
+    '''
     image = Image.open(image_path).convert('L')
     padded_and_cropped_image = pad_image(image)
     image_array = np.array(padded_and_cropped_image).flatten()

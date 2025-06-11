@@ -97,19 +97,6 @@ def predict(model, threshold_prob, test_data, bias_present=True, has_label=True)
     pred = torch.where(pred >= threshold_prob, 1, 0)
     return pred
 
-file_path_to_training_data = "../Data/ProcessedRawData/TrainingSet/PvNormalDataNormalised_var0.02.npy"
-training_data = np.load(file_path_to_training_data)
-training_data = torch.from_numpy(training_data).float()
-file_path_to_test_data = "../Data/ProcessedRawData/TestSet/PvNormalDataNormalised_var0.02.npy"
-test_data = np.load(file_path_to_test_data)
-test_data = torch.from_numpy(test_data).float()
-
-num_input_features = training_data.shape[1] - 2
-model = NeuralNetwork(num_input_features)
-
-most_acc_model, most_recall_method = train_model(model, 600, training_data, test_data, 0.001, save_model=False)
-print(most_acc_model, most_recall_method)
-
 """
 ../Data/ProcessedRawData/TrainingSet/PvNormalDataNormalised.npy
 single layer

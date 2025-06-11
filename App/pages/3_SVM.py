@@ -3,7 +3,7 @@ import streamlit as st
 from PIL import Image
 
 from App.AppUtils import display_description, create_line_chart, create_unstacked_bar_graph, process_image
-from App.Models.SVM.SVM import train_model, predict_with_input_model
+from App.Models.SVM.SVM import predict_with_saved_model
 
 st.set_page_config(
     page_title="Predict Pneumonia with SVM",
@@ -110,10 +110,8 @@ def predict():
         st.session_state.is_predicted = False
     else:
         st.session_state.no_file_uploaded_error = False
-        training_data = np.load("App/Models/Data/ProcessedRawData/TrainingSet/PvNormalDataNormalised.npy")
-        trained_model = train_model(training_data, kernel='rbf', gamma=0.0004)
         processed_image_arr = process_image(st.session_state.uploaded_file)
-        prediction = predict_with_input_model(trained_model, processed_image_arr, has_label=False)
+        prediction = predict_with_saved_model(processed_image_arr, has_label=False)
         prediction = prediction[0].item()
         st.session_state.prediction = prediction
         st.session_state.is_predicted = True

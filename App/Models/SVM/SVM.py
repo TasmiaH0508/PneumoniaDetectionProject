@@ -1,11 +1,10 @@
-import numpy as np
+import joblib
 import torch
 from sklearn import svm
 
-from App.ComputeMetrics import get_accuracy, get_recall, get_precision
 from App.PrepareData import get_data_without_bias_and_label, get_label
 
-def train_model(train_data, kernel='rbf', degree=1, gamma=0.0004):
+def train_model(train_data, kernel='rbf', degree=1, gamma=0.0004, save_model=False):
     '''
     :param kernel: gaussian is the default kernel
     :param degree: for linear kernel, to choose degree of features
@@ -20,6 +19,9 @@ def train_model(train_data, kernel='rbf', degree=1, gamma=0.0004):
     else:
         clf = svm.SVC(kernel=kernel, gamma=gamma, class_weight='balanced')
     clf.fit(train_data_wo_label, train_labels)
+
+    if save_model:
+        joblib.dump(clf, 'svm_model.joblib')
     return clf
 
 def predict_with_input_model(clf, test_data, has_label=True):
@@ -32,3 +34,12 @@ def predict_with_input_model(clf, test_data, has_label=True):
     predicted = clf.predict(test_data_wo_bias_and_label)
     predicted = torch.from_numpy(predicted)
     return predicted
+
+def predict_with_saved_model(processed_image_array, has_label=True):
+    model = joblib.load('App/Models/SVM/svm_model.joblib')
+    input = processed_image_array
+    if has_label:
+        input = get_data_without_bias_and_label(processed_image_array, has_bias=False)
+    pred = model.predict(input)
+    pred = torch.from_numpy(pred)
+    return pred
