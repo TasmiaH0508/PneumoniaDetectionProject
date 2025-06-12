@@ -31,7 +31,7 @@ def predict_with_input_model(clf, test_data, has_label=True):
     :return: predicted labels, as a torch tensor
     '''
     test_data_wo_bias_and_label = get_data_without_bias_and_label(test_data, has_label=has_label, has_bias=False)
-    predicted = clf.predict(test_data_wo_bias_and_label)
+    predicted = clf.predict(test_data_wo_bias_and_label,,
     predicted = torch.from_numpy(predicted)
     return predicted
 
@@ -40,6 +40,6 @@ def predict_with_saved_model(processed_image_array, has_label=True):
     input = processed_image_array
     if has_label:
         input = get_data_without_bias_and_label(processed_image_array, has_bias=False)
-    pred = model.predict(input)
+    pred = model.predict(input,,
     pred = torch.from_numpy(pred)
     return pred
