@@ -148,6 +148,8 @@ def display_findings():
 
     st.markdown(
         """
+        A 70-30 split was utilised for the datasets.
+        
         For Dataset A, the accuracy, precision and recall is generally higher for the Gaussian kernel. For recall to be 
         maximised, gamma = 0.0004 for the gaussian kernel. For precision and accuracy to be maximised, gamma = 0.0003.
         In general, the gaussian kernel performed better than the linear kernel for Dataset A.
