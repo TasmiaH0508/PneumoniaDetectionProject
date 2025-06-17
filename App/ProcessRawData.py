@@ -326,7 +326,6 @@ def prepare_data():
     ''''
     Prepares data for training and testing for various machine learning techniques, that is not CNN.
     '''
-    # Process final data
     raw_data_1 = process_images(NORMAL_folder_1)
     raw_data_2 = process_images(P_folder)
     # if pneumonia present, label is 1

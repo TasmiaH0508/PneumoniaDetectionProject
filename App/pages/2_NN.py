@@ -58,12 +58,11 @@ def predict():
 def display_findings():
     st.markdown(
         """
-        ### 🔎 About the Neural Network
-        """
-    )
-    st.info(
-        """
-        ### How exactly is this different from CNN?
+        ### 🔎 About the Neural Network model
+        
+        All images were processed into arrays before being fed into the neural network. 
+        
+        To train the neural network, a 70-30 split was used, achieving an accuracy of 95.4% and recall of ...
         """
     )
 

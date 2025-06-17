@@ -14,10 +14,10 @@ device = (
 print(f"Using {device} device")
 
 class NeuralNetwork(nn.Module):
-    def __init__(self, num_input_features):
+    def __init__(self, num_input_features_wo_bias):
         super().__init__()
-        self.num_input_features = num_input_features
-        self.L1 = nn.Linear(num_input_features, 1)
+        self.num_input_features = num_input_features_wo_bias
+        self.L1 = nn.Linear(num_input_features_wo_bias, 1)
         self.L2 = nn.Sigmoid()
 
     def forward(self, x):
@@ -26,9 +26,9 @@ class NeuralNetwork(nn.Module):
         return x
 
 def train_model(model, epochs, train_data, lr, bias_present_for_training_set=True, save_model=False,
-                use_old_weights=False, path="weights.pth"):
+                use_old_weights=False, path_to_use="weights.pth"):
     if use_old_weights:
-        weights = torch.load(path, weights_only=True)
+        weights = torch.load(path_to_use, weights_only=True)
         model.load_state_dict(weights)
 
     train_labels = get_label(train_data)
@@ -49,13 +49,13 @@ def train_model(model, epochs, train_data, lr, bias_present_for_training_set=Tru
         loss_val.backward()
         optimiser.step()
 
-        if save_model:
-            torch.save(model.state_dict(), "weights.pth")
+    if save_model:
+        torch.save(model.state_dict(), "weights.pth")
 
 def predict_with_saved_model(processed_image_arr):
     num_input_features = 65536
     model = NeuralNetwork(num_input_features)
-    weights = torch.load("App/Models/NeuralNetwork/model_max_recall.pth", weights_only=True)
+    weights = torch.load("App/Models/NeuralNetwork/weights.pth", weights_only=True)
     model.load_state_dict(weights)
     model.eval()
 
