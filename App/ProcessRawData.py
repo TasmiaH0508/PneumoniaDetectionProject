@@ -340,3 +340,28 @@ def prepare_data():
     np.save("./Models/Data/ProcessedRawData/Index/Indices_Kept_data_var0.02", indices_kept)
     np.save("./Models/Data/ProcessedRawData/MinData/min_across_all_features_var0.02", min_matrix)
     np.save("./Models/Data/ProcessedRawData/RangeData/range_across_all_features_var0.02", range_matrix)
+
+def get_indices_for_test_and_validation_set(num_samples_total, num_samples_test_set, num_samples_validation_set):
+    np.random.seed(44)
+    indices_in_test_set = np.random.choice(num_samples_total, num_samples_test_set, replace=False)
+
+    indices_not_in_test_set = -np.ones(num_samples_total)
+    indices_not_in_test_set[indices_in_test_set] = indices_in_test_set
+    indices_not_in_test_set = np.where(indices_not_in_test_set == -1)[0]
+
+    num_indices_not_in_test_set = num_samples_total - num_samples_test_set
+    indices_in_validation_set = np.random.choice(num_indices_not_in_test_set, num_samples_validation_set, replace=False)
+    indices_in_validation_set = indices_not_in_test_set[indices_in_validation_set]
+    return indices_in_test_set, indices_in_validation_set
+
+def create_split_for_CNN(num_samples_in_train_set, num_samples_in_validation_set, num_pneumonia_samples=1800,
+                         num_normal_samples=1802, path_to_pneumonia_folder="./Models/Data/RawData/PNEUMONIA",
+                         path_to_normal_folder="./Models/Data/RawData/NORMAL"):
+    classes = ['PNEUMONIA', 'NORMAL']
+    base_directories = ["./Models/Data/CNNData/Train", "./Models/Data/Validation", "./Models/Data/CNNData/Test"]
+
+    for class_name in classes:
+        for base_directory in base_directories:
+            os.makedirs(os.path.join(base_directory, class_name), exist_ok=True)
+
+    # todo
