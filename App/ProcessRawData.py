@@ -342,7 +342,6 @@ def prepare_data():
     np.save("./Models/Data/ProcessedRawData/RangeData/range_across_all_features_var0.02", range_matrix)
 
 def get_indices_for_test_and_validation_set(num_samples_total, num_samples_test_set, num_samples_validation_set):
-    np.random.seed(44)
     indices_in_test_set = np.random.choice(num_samples_total, num_samples_test_set, replace=False)
 
     indices_not_in_test_set = -np.ones(num_samples_total)
@@ -354,14 +353,48 @@ def get_indices_for_test_and_validation_set(num_samples_total, num_samples_test_
     indices_in_validation_set = indices_not_in_test_set[indices_in_validation_set]
     return indices_in_test_set, indices_in_validation_set
 
-def create_split_for_CNN(num_samples_in_train_set, num_samples_in_validation_set, num_pneumonia_samples=1800,
+def create_split_for_CNN(num_samples_in_test_set=270, num_samples_in_validation_set=270, num_pneumonia_samples=1800,
                          num_normal_samples=1802, path_to_pneumonia_folder="./Models/Data/RawData/PNEUMONIA",
                          path_to_normal_folder="./Models/Data/RawData/NORMAL"):
     classes = ['PNEUMONIA', 'NORMAL']
-    base_directories = ["./Models/Data/CNNData/Train", "./Models/Data/Validation", "./Models/Data/CNNData/Test"]
+    base_directories = ["./Models/Data/CNNData/Train", "./Models/Data/CNNData/Validation", "./Models/Data/CNNData/Test"]
 
     for class_name in classes:
         for base_directory in base_directories:
             os.makedirs(os.path.join(base_directory, class_name), exist_ok=True)
 
-    # todo
+    indices_in_test_set_pneumonia, indices_in_validation_set_pneumonia = get_indices_for_test_and_validation_set(
+        num_pneumonia_samples, num_samples_in_test_set, num_samples_in_validation_set)
+
+    i = 0
+    for filename in os.listdir(path_to_pneumonia_folder):
+        image_path = os.path.join(path_to_pneumonia_folder, filename)
+        image = Image.open(image_path)
+
+        if i in indices_in_test_set_pneumonia:
+            dst_path = base_directories[2] + "/" + classes[0] + "/" + filename
+        elif i in indices_in_validation_set_pneumonia:
+            dst_path = base_directories[1] + "/" + classes[0] + "/" + filename
+        else:
+            dst_path = base_directories[0] + "/" + classes[0] + "/" + filename
+
+        image.save(dst_path)
+        i += 1
+
+    indices_in_test_set_normal, indices_in_validation_set_normal = get_indices_for_test_and_validation_set(
+        num_normal_samples, num_samples_in_test_set, num_samples_in_validation_set)
+
+    i = 0
+    for filename in os.listdir(path_to_normal_folder):
+        image_path = os.path.join(path_to_normal_folder, filename)
+        image = Image.open(image_path)
+
+        if i in indices_in_test_set_normal:
+            dst_path = base_directories[2] + "/" + classes[1] + "/" + filename
+        elif i in indices_in_validation_set_normal:
+            dst_path = base_directories[1] + "/" + classes[1] + "/" + filename
+        else:
+            dst_path = base_directories[0] + "/" + classes[1] + "/" + filename
+
+        image.save(dst_path)
+        i += 1
