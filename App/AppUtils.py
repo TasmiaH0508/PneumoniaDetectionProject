@@ -21,7 +21,7 @@ def display_description():
         - For best results, ensure that the chest x-ray images are square or close to being a square. 
         """
     )
-    st.warning("⚠️ Use the models at your own discretion.")
+    st.warning("⚠️ Use the models at your own risk. The models are not 100% accurate.")
     st.subheader("⬇️ Upload your chest x-ray here:")
 
 def create_line_chart(data, labels, index, x_axis_label, domain):
