@@ -4,8 +4,6 @@ from torch import nn
 from torchvision.transforms import transforms
 import torch.optim as optim
 
-from App.ComputeMetrics import get_accuracy, get_recall
-
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
 print(device)
@@ -49,6 +47,7 @@ class CNN(nn.Module):
 def prepare_data_loader(transform=transform_to_use, path_to_training_data='../Data/CNNData/Train',
                         path_to_validation_set='../Data/CNNData/Validation',
                         path_to_test_set='../Data/CNNData/Test', batch_size=32):
+    # NORMAL samples have label 0 and PNEUMONIA samples have label 1
     training_set = torchvision.datasets.ImageFolder(path_to_training_data, transform=transform)
     validation_set = torchvision.datasets.ImageFolder(path_to_validation_set, transform=transform)
     test_set = torchvision.datasets.ImageFolder(path_to_test_set, transform=transform)
@@ -58,8 +57,9 @@ def prepare_data_loader(transform=transform_to_use, path_to_training_data='../Da
     test_loader = torch.utils.data.DataLoader(test_set, batch_size=batch_size, shuffle=True)
     return training_loader, validation_loader, test_loader
 
-def train(epochs, save_highest_accuracy_model=True, save_highest_recall_model=True, save_resulting_model=True, use_old_model=False,
-          path_to_use_for_old_model='highest_recall_model.pth'):
+def train(epochs, save_highest_accuracy_model=True, save_highest_recall_model=True, save_final_model=True, use_old_model=False,
+          path_to_use_for_old_model='highest_recall_model.pth', path_to_use_for_max_accuracy_model='highest_accuracy_model.pth',
+          path_to_use_for_max_recall_model='highest_recall_model.pth', threshold=0.4):
     net = CNN()
 
     if use_old_model:
@@ -71,51 +71,115 @@ def train(epochs, save_highest_accuracy_model=True, save_highest_recall_model=Tr
 
     train_loader, val_loader, _ = prepare_data_loader()
 
-    val_inputs, val_labels = None, None
-    for j, val_data in enumerate(val_loader):
-        val_inputs, val_labels = val_data
+    use_validation_set = save_highest_accuracy_model or save_highest_recall_model
 
     max_accuracy_score = 0
     max_recall_score = 0
     max_accuracy_model = None
     max_recall_model = None
     for epoch in range(epochs):
+        running_loss = 0
         for i, data in enumerate(train_loader, 0):
-            inputs, labels = data
-            labels = labels.float()
+            train_inputs, train_labels = data
+            train_labels = train_labels.float()
 
             optimizer.zero_grad()
 
-            outputs = net(inputs)
-            loss = criterion(outputs, labels)
+            outputs = net(train_inputs)
+            loss = criterion(outputs, train_labels)
             loss.backward()
             optimizer.step()
 
-        if save_highest_accuracy_model:
-            output = net(val_inputs)
-            accuracy_score = get_accuracy(val_labels, output)
-            if accuracy_score > max_accuracy_score:
-                max_accuracy_score = accuracy_score
-                max_accuracy_model = net
+            running_loss += loss.item()
 
-        if save_highest_recall_model:
-            output = net(val_inputs)
-            recall_score = get_recall(val_labels, output)
-            if recall_score > max_recall_score:
-                max_recall_score = recall_score
-                max_accuracy_model = net
+        print("Training loss:", running_loss)
 
+        if use_validation_set:
+            net.eval()
+            validation_loss = 0
+            actual_labels = []
+            predicted_labels = []
+            with torch.no_grad():
+                for i, data in enumerate(val_loader, 0):
+                    val_inputs, val_labels = data
+                    val_labels = val_labels.float()
+                    actual_labels.append(val_labels)
+                    pred = net(val_inputs)
+                    pred = (pred >= threshold).float()
+                    predicted_labels.append(pred)
+                    loss = criterion(pred, val_labels)
+                    validation_loss += loss.item()
+
+            print("Validation loss:", validation_loss)
+
+            if save_highest_accuracy_model:
+                accuracy_score = get_accuracy(actual_labels, predicted_labels, threshold)
+                if accuracy_score > max_accuracy_score:
+                    max_accuracy_score = accuracy_score
+                    max_accuracy_model = net
+            else:
+                recall_score = get_recall(actual_labels, predicted_labels, threshold)
+                if recall_score > max_recall_score:
+                    max_recall_score = recall_score
+                    max_recall_model = net
     print('Finished Training')
 
-    if max_accuracy_model is not None and save_highest_accuracy_model:
-        torch.save(max_accuracy_model.state_dict(), 'highest_accuracy_model.pth')
-        print('Saved highest accuracy model. Model has an accuracy of', max_accuracy_score)
+    if save_highest_accuracy_model and max_accuracy_model is not None:
+        torch.save(max_accuracy_model.state_dict(), path_to_use_for_max_accuracy_model)
+        print("Max accuracy reached:", max_accuracy_score)
 
-    if max_recall_model is not None and save_highest_recall_model:
-        torch.save(max_recall_model.state_dict(), 'highest_recall_model.pth')
-        print('Saved highest recall model. Model has an recall of', max_recall_score)
+    if save_highest_recall_model and max_recall_model is not None:
+        torch.save(max_recall_model.state_dict(), path_to_use_for_max_recall_model)
+        print("Max recall reached:", max_recall_score)
 
-    if save_resulting_model:
-        torch.save(net.state_dict(), 'model.pth')
+    if save_final_model:
+        torch.save(net.state_dict(), 'Weights/final_model.pth')
 
     return net
+
+def get_accuracy(actual_labels, predicted_labels, threshold):
+    total_labels = 0
+    correct_labels = 0
+    for i in range(len(actual_labels)):
+        for j in range(len(actual_labels[i])):
+            total_labels += 1
+            if predicted_labels[i][j] >= threshold:
+                predicted_labels[i][j] = 1
+            else:
+                predicted_labels[i][j] = 0
+            if actual_labels[i][j] == predicted_labels[i][j]:
+                correct_labels += 1
+    accuracy = correct_labels / total_labels
+    return accuracy
+
+def get_recall(actual_labels, predicted_labels, threshold):
+    true_positives = 0
+    false_negatives = 0
+    for i in range(len(actual_labels)):
+        for j in range(len(actual_labels[i])):
+            if predicted_labels[i][j] >= threshold:
+                predicted_labels[i][j] = 1
+            else:
+                predicted_labels[i][j] = 0
+            if actual_labels[i][j] == predicted_labels[i][j] and actual_labels[i][j] == 1:
+                true_positives += 1
+            if predicted_labels[i][j] == 0 and predicted_labels[i][j] != actual_labels[i][j]:
+                false_negatives += 1
+    recall_score = true_positives / (true_positives + false_negatives)
+    return recall_score
+
+train(2, use_old_model=True, path_to_use_for_old_model='Weights/final_model.pth')
+
+"""
+1:
+Training loss: 44.959220826625824
+Validation loss: 226.7857141494751
+Finished Training
+Max accuracy reached: 0.8666666666666667
+
+3:
+Training loss: 18.04400011152029
+Validation loss: 122.32142853736877
+Finished Training
+Max accuracy reached: 0.9277777777777778
+"""

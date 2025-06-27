@@ -7,5 +7,3 @@ Description:
 
 The purpose of the project is to distinguish between patients with pneumonia from those without 
 using chest xray pictures.
-
-Setting up the project:
