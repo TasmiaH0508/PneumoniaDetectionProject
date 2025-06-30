@@ -11,7 +11,6 @@ print(device)
 target_size = (256, 256)
 
 transform_to_use = transforms.Compose([torchvision.transforms.Grayscale(num_output_channels=3),
-                                #torchvision.transforms.RandomHorizontalFlip(p=0.5),
                                 torchvision.transforms.Resize(target_size),
                                 torchvision.transforms.ToTensor()])
 
@@ -44,26 +43,58 @@ class CNN(nn.Module):
         x = self.L8(x)
         return x.view(-1)
 
-def prepare_data_loader(transform=transform_to_use, path_to_training_data='../Data/CNNData/Train',
-                        path_to_validation_set='../Data/CNNData/Validation',
-                        path_to_test_set='../Data/CNNData/Test', batch_size=32):
+def prepare_data_loader(transform=transform_to_use, get_training_set=True, get_validation_set=True, get_test_set=False,
+                        batch_size=32):
+    path_to_training_data = '../Data/CNNData/Train'
+    path_to_validation_set = '../Data/CNNData/Validation'
+    path_to_test_set = '../Data/CNNData/Test'
     # NORMAL samples have label 0 and PNEUMONIA samples have label 1
-    training_set = torchvision.datasets.ImageFolder(path_to_training_data, transform=transform)
-    validation_set = torchvision.datasets.ImageFolder(path_to_validation_set, transform=transform)
-    test_set = torchvision.datasets.ImageFolder(path_to_test_set, transform=transform)
+    training_loader = None
+    if get_training_set:
+        training_set = torchvision.datasets.ImageFolder(path_to_training_data, transform=transform)
+        training_loader = torch.utils.data.DataLoader(training_set, batch_size=batch_size, shuffle=True)
 
-    training_loader = torch.utils.data.DataLoader(training_set, batch_size=batch_size, shuffle=True)
-    validation_loader = torch.utils.data.DataLoader(validation_set, batch_size=batch_size, shuffle=True)
-    test_loader = torch.utils.data.DataLoader(test_set, batch_size=batch_size, shuffle=True)
+    validation_loader = None
+    if get_validation_set:
+        validation_set = torchvision.datasets.ImageFolder(path_to_validation_set, transform=transform)
+        validation_loader = torch.utils.data.DataLoader(validation_set, batch_size=batch_size, shuffle=True)
+
+    test_loader = None
+    if get_test_set:
+        test_set = torchvision.datasets.ImageFolder(path_to_test_set, transform=transform)
+        test_loader = torch.utils.data.DataLoader(test_set, batch_size=batch_size, shuffle=True)
     return training_loader, validation_loader, test_loader
 
+def get_accuracy(actual_labels, predicted_labels):
+    total_labels = 0
+    correct_labels = 0
+    for i in range(len(actual_labels)):
+        for j in range(len(actual_labels[i])):
+            total_labels += 1
+            if actual_labels[i][j] == predicted_labels[i][j]:
+                correct_labels += 1
+    accuracy = correct_labels / total_labels
+    return accuracy
+
+def get_recall(actual_labels, predicted_labels):
+    true_positives = 0
+    false_negatives = 0
+    for i in range(len(actual_labels)):
+        for j in range(len(actual_labels[i])):
+            if actual_labels[i][j] == predicted_labels[i][j] and actual_labels[i][j] == 1:
+                true_positives += 1
+            if predicted_labels[i][j] == 0 and predicted_labels[i][j] != actual_labels[i][j]:
+                false_negatives += 1
+    recall_score = true_positives / (true_positives + false_negatives)
+    return recall_score
+
 def train(epochs, save_highest_accuracy_model=True, save_highest_recall_model=True, save_final_model=True, use_old_model=False,
-          path_to_use_for_old_model='highest_recall_model.pth', path_to_use_for_max_accuracy_model='highest_accuracy_model.pth',
+          path_to_old_model='highest_recall_model.pth', path_to_use_for_max_accuracy_model='highest_accuracy_model.pth',
           path_to_use_for_max_recall_model='highest_recall_model.pth', threshold=0.4):
     net = CNN()
 
     if use_old_model:
-        weights = torch.load(path_to_use_for_old_model, weights_only=True)
+        weights = torch.load(path_to_old_model, weights_only=True)
         net.load_state_dict(weights)
 
     criterion = nn.BCELoss()
@@ -113,15 +144,17 @@ def train(epochs, save_highest_accuracy_model=True, save_highest_recall_model=Tr
             print("Validation loss:", validation_loss)
 
             if save_highest_accuracy_model:
-                accuracy_score = get_accuracy(actual_labels, predicted_labels, threshold)
+                accuracy_score = get_accuracy(actual_labels, predicted_labels)
                 if accuracy_score > max_accuracy_score:
                     max_accuracy_score = accuracy_score
                     max_accuracy_model = net
-            else:
-                recall_score = get_recall(actual_labels, predicted_labels, threshold)
+
+            if save_highest_recall_model:
+                recall_score = get_recall(actual_labels, predicted_labels)
                 if recall_score > max_recall_score:
                     max_recall_score = recall_score
                     max_recall_model = net
+
     print('Finished Training')
 
     if save_highest_accuracy_model and max_accuracy_model is not None:
@@ -133,53 +166,82 @@ def train(epochs, save_highest_accuracy_model=True, save_highest_recall_model=Tr
         print("Max recall reached:", max_recall_score)
 
     if save_final_model:
-        torch.save(net.state_dict(), 'Weights/final_model.pth')
+        torch.save(net.state_dict(), 'final_model.pth')
 
     return net
 
-def get_accuracy(actual_labels, predicted_labels, threshold):
-    total_labels = 0
-    correct_labels = 0
-    for i in range(len(actual_labels)):
-        for j in range(len(actual_labels[i])):
-            total_labels += 1
-            if predicted_labels[i][j] >= threshold:
-                predicted_labels[i][j] = 1
-            else:
-                predicted_labels[i][j] = 0
-            if actual_labels[i][j] == predicted_labels[i][j]:
-                correct_labels += 1
-    accuracy = correct_labels / total_labels
-    return accuracy
+def print_metrics_of_input_set(path_to_model, set_to_use='validation', threshold=0.4):
+    if set_to_use == 'test':
+        set_to_compute = prepare_data_loader(get_test_set=True, get_validation_set=False, get_training_set=False)[2]
+    else:
+        set_to_compute = prepare_data_loader(get_training_set=False, get_validation_set=True, get_test_set=False)[1]
 
-def get_recall(actual_labels, predicted_labels, threshold):
-    true_positives = 0
-    false_negatives = 0
-    for i in range(len(actual_labels)):
-        for j in range(len(actual_labels[i])):
-            if predicted_labels[i][j] >= threshold:
-                predicted_labels[i][j] = 1
-            else:
-                predicted_labels[i][j] = 0
-            if actual_labels[i][j] == predicted_labels[i][j] and actual_labels[i][j] == 1:
-                true_positives += 1
-            if predicted_labels[i][j] == 0 and predicted_labels[i][j] != actual_labels[i][j]:
-                false_negatives += 1
-    recall_score = true_positives / (true_positives + false_negatives)
-    return recall_score
+    model = CNN()
+    weights = torch.load(path_to_model, weights_only=True)
+    model.load_state_dict(weights)
+    model.eval()
 
-train(2, use_old_model=True, path_to_use_for_old_model='Weights/final_model.pth')
+    actual_labels = []
+    predicted_labels = []
+    with torch.no_grad():
+        for i, data in enumerate(set_to_compute, 0):
+            inputs, labels = data
+            labels = labels.float()
+            actual_labels.append(labels)
+            pred = model(inputs)
+            pred = (pred >= threshold).float()
+            predicted_labels.append(pred)
+
+    accuracy = get_accuracy(actual_labels, predicted_labels)
+    recall = get_recall(actual_labels, predicted_labels)
+    print('Accuracy:', accuracy)
+    print('Recall:', recall)
+
+def predict_with_saved_model():
+    net = CNN()
+    # todo
+    return 0
 
 """
-1:
+10:
 Training loss: 44.959220826625824
 Validation loss: 226.7857141494751
+Training loss: 23.764911457896233
+Validation loss: 399.1071434020996
+Training loss: 20.690328285098076
+Validation loss: 115.625
+Training loss: 15.628364123404026
+Validation loss: 183.0357141494751
+Training loss: 14.99319913238287
+Validation loss: 104.9107141494751
+Training loss: 13.012308485805988
+Validation loss: 117.85714340209961
+Training loss: 12.811642792075872
+Validation loss: 100.44642853736877
+Training loss: 11.897422458976507
+Validation loss: 88.39285707473755
+Training loss: 11.719549261033535
+Validation loss: 91.51785707473755
+Training loss: 12.035624828189611
+Validation loss: 87.94642853736877
 Finished Training
-Max accuracy reached: 0.8666666666666667
+Max accuracy reached: 0.9481481481481482
+Max recall reached: 0.9925925925925926
 
-3:
-Training loss: 18.04400011152029
-Validation loss: 122.32142853736877
-Finished Training
-Max accuracy reached: 0.9277777777777778
+"Weights/highest_accuracy_model_0.948_t0.4.pth" 
+Val
+Accuracy: 0.9481481481481482
+Recall: 0.9333333333333333
+Test
+Accuracy: 0.9574074074074074
+Recall: 0.9555555555555556
+
+"Weights/highest_recall_model_0.993_t0.4.pth"
+Val
+Accuracy: 0.8925925925925926
+Recall: 0.9777777777777777
+
+Test
+Accuracy: 0.8814814814814815
+Recall: 0.9851851851851852
 """
