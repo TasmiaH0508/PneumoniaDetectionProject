@@ -13,8 +13,8 @@ st.set_page_config(
 # Results
 # for linear kernel, for data with no features removed
 results_1 = np.array([[0.9432, 0.9431, 0.9432],
-                    [0.9390, 0.9390, 0.9390],
-                    [0.9479, 0.9479, 0.9479]])
+                      [0.9390, 0.9390, 0.9390],
+                      [0.9479, 0.9479, 0.9479]])
 results_1 = np.transpose(results_1)
 results_1_labels = ["accuracy", "precision", "recall"]
 results_1_index = [1, 2, 3]
@@ -29,8 +29,9 @@ results_1_reference = np.repeat(results_1_reference, results_2.shape[1], axis=1)
 results_2 = np.vstack((results_2, results_1_reference))
 results_2 = np.transpose(results_2)
 results_2_labels = ["accuracy", "precision", "recall",
-                    "maximum accuracy for linear kernel", "maximum precision for linear kernel", "maximum recall for linear kernel"]
-results_2_index = [1/2500, 1/3000, 1/4000, 1/6000, 1/8000, 1/1000, 1/900]
+                    "maximum accuracy for linear kernel", "maximum precision for linear kernel",
+                    "maximum recall for linear kernel"]
+results_2_index = [1 / 2500, 1 / 3000, 1 / 4000, 1 / 6000, 1 / 8000, 1 / 1000, 1 / 900]
 
 # for linear kernel, for data with features removed
 results_3 = np.array([[0.939, 0.939, 0.939],
@@ -50,8 +51,9 @@ results_3_reference = np.repeat(results_3_reference, 7, axis=1)
 results_4 = np.vstack((results_4, results_3_reference))
 results_4 = np.transpose(results_4)
 results_4_labels = ["accuracy", "precision", "recall",
-                    "maximum accuracy for linear kernel", "maximum precision for linear kernel", "maximum recall for linear kernel"]
-results_4_index = [1/2500, 1/3000, 1/4000, 1/6000, 1/8000, 1/1000, 1/900]
+                    "maximum accuracy for linear kernel", "maximum precision for linear kernel",
+                    "maximum recall for linear kernel"]
+results_4_index = [1 / 2500, 1 / 3000, 1 / 4000, 1 / 6000, 1 / 8000, 1 / 1000, 1 / 900]
 
 # compare scores of gaussian kernel between datasets A and B
 precision_from_results_2 = results_2[:, 1]
@@ -60,15 +62,16 @@ f1_score_from_results_2 = 2 / (1 / precision_from_results_2 + 1 / recall_from_re
 precision_from_results_4 = results_4[:, 1]
 recall_from_results_4 = results_4[:, 2]
 f1_score_from_results_4 = 2 / (1 / precision_from_results_4 + 1 / recall_from_results_4)
-results_5a = np.transpose(results_2[:, 0 : 3])
+results_5a = np.transpose(results_2[:, 0: 3])
 results_5a = np.vstack((results_5a, f1_score_from_results_2))
-results_5b = np.transpose(results_4[:, 0 : 3])
+results_5b = np.transpose(results_4[:, 0: 3])
 results_5b = np.vstack((results_5b, f1_score_from_results_4))
 results_5 = np.vstack((results_5a, results_5b))
 results_5 = np.transpose(results_5)
 results_5_labels = ["accuracy for A", "precision for A", "recall for A", "f1-score for A",
                     "accuracy for B", "precision for B", "recall for B", "f1-score for B"]
-results_5_index = [1/2500, 1/3000, 1/4000, 1/6000, 1/8000, 1/1000, 1/900]
+results_5_index = [1 / 2500, 1 / 3000, 1 / 4000, 1 / 6000, 1 / 8000, 1 / 1000, 1 / 900]
+
 
 def intro():
     st.title("Predict Pneumonia from x-rays with SVM🩻")
@@ -104,6 +107,7 @@ def intro():
 
     display_findings()
 
+
 def predict():
     if st.session_state.get("uploaded_file") is None:
         st.session_state.no_file_uploaded_error = True
@@ -115,6 +119,7 @@ def predict():
         prediction = prediction[0].item()
         st.session_state.prediction = prediction
         st.session_state.is_predicted = True
+
 
 def display_findings():
     st.markdown(
@@ -149,7 +154,7 @@ def display_findings():
     st.markdown(
         """
         A 70-30 split was utilised for the datasets.
-        
+
         For Dataset A, the accuracy, precision and recall is generally higher for the Gaussian kernel. For recall to be 
         maximised, gamma = 0.0004 for the gaussian kernel. For precision and accuracy to be maximised, gamma = 0.0003.
         In general, the gaussian kernel performed better than the linear kernel for Dataset A.
@@ -187,5 +192,6 @@ def display_findings():
         the current classifier is the classifier trained on dataset A.
         """
     )
+
 
 intro()

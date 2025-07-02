@@ -1,7 +1,9 @@
+import numpy as np
+import torch
 from torch import nn
 
-from App.PrepareData import *
-from App.ComputeMetrics import *
+from App.ComputeMetrics import get_accuracy, get_recall
+from App.PrepareData import get_label, get_data_without_bias_and_label
 
 device = (
     "cuda"
@@ -25,7 +27,7 @@ class NeuralNetwork(nn.Module):
         x = self.L2(x)
         return x
 
-def train_model(model, epochs, train_data, lr, bias_present_for_training_set=True, save_model=False,
+def train_model(model, epochs, train_data, lr=0.001, bias_present_for_training_set=True, save_model=False,
                 use_old_weights=False, path_to_use="weights.pth"):
     if use_old_weights:
         weights = torch.load(path_to_use, weights_only=True)
@@ -52,6 +54,8 @@ def train_model(model, epochs, train_data, lr, bias_present_for_training_set=Tru
     if save_model:
         torch.save(model.state_dict(), "weights.pth")
 
+    return model
+
 def predict_with_saved_model(processed_image_arr):
     num_input_features = 65536
     model = NeuralNetwork(num_input_features)
@@ -66,13 +70,15 @@ def predict_with_saved_model(processed_image_arr):
     return pred
 
 def predict(model, threshold_prob, data, bias_present=True, has_label=True):
-    ''''
-    Returns the prediction.
+    """
 
-    The test_data param is a tensor that may or may not include the label or bias.
-    If bias is present, set bias_present=True
-    If label is present, set has_label=True
-    '''
+    :param model:
+    :param threshold_prob:
+    :param data:
+    :param bias_present:
+    :param has_label:
+    :return:
+    """
     data = get_data_without_bias_and_label(data, has_bias=bias_present, has_label=has_label)
     pred = model(data)
     pred = torch.where(pred >= threshold_prob, 1, 0)

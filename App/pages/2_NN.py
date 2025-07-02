@@ -62,7 +62,7 @@ def display_findings():
         
         All images were processed into arrays before being fed into the neural network. 
         
-        To train the neural network, a 70-30 split was used, achieving an accuracy of 95.4% and recall of ...
+        To train the neural network, a 70-30 split was used, achieving an accuracy of 94.8% and recall of 0.96.
         """
     )
 

@@ -229,22 +229,16 @@ def pick_observations_and_features(data, rows_to_remove, cols_to_keep):
         data = data[:, cols_to_keep]
     return data
 
-def process_test_and_training_data_in_batches(raw_data_1, raw_data_2, var=0.04, sample_size=630, reduce_features=True):
-    ''''
-    Takes in 2 matrices, each of which is a numpy array of shape (num data points, num features). Note that num columns 
-    must be the same for each matrix. If reduce_features is set to False, pca is not applied. If var=0, no features are removed.
-
-    Note: raw_data_1 will have the label of 0 and raw_data_2 will have the label of 1. A bias column is also added.
-
-    WARNING: Data shape may change with different runs
-
-    Procedure:
-    1. Pick random rows from raw_data_1 and raw_data_2
-    2. Stack the processed(reduced) raw_data_1 on top of raw_data_2
-    3. Normalise the data. Perform PCA (on the test set only) and reconstruct the data
-    4. Remove the features where there is very little variance and keep track of the indices removed
-    5. Remove features from the test set
-    '''
+def process_test_and_training_data_in_batches(raw_data_1, raw_data_2, var=0.04, sample_size=1260, reduce_features=True):
+    """
+    Processes samples for model-training and testing. Not suitable for CNN only
+    :param raw_data_1:
+    :param raw_data_2:
+    :param var:
+    :param sample_size: Number of samples in the training set
+    :param reduce_features:
+    :return:
+    """
     raw_data_1 = torch.from_numpy(raw_data_1)
     raw_data_2 = torch.from_numpy(raw_data_2)
 
@@ -308,8 +302,6 @@ def process_test_and_training_data_in_batches(raw_data_1, raw_data_2, var=0.04, 
                                                  indices_with_sufficiently_large_variance)
     test_data_2 = pick_observations_and_features(raw_data_2, random_indices_2_train,
                                                  indices_with_sufficiently_large_variance)
-    print(test_data_1.shape)
-    print(test_data_2.shape)
 
     # Stack data, normalise, add bias col and label col
     processed_test_data = stack_and_label_data(test_data_1, test_data_2)
@@ -329,17 +321,17 @@ def prepare_data():
     raw_data_1 = process_images(NORMAL_folder_1)
     raw_data_2 = process_images(P_folder)
     # if pneumonia present, label is 1
-    PvNormalDataTrain, PvNormalDataTest, indices_kept, min_matrix, range_matrix = process_test_and_training_data_in_batches(raw_data_1, raw_data_2, var=0.02, reduce_features=True)
+    PvNormalDataTrain, PvNormalDataTest, indices_kept, min_matrix, range_matrix = process_test_and_training_data_in_batches(raw_data_1, raw_data_2, var=0, reduce_features=False)
 
     training_data_to_save = PvNormalDataTrain.numpy()
     testing_data_to_save = PvNormalDataTest.numpy()
-    np.save("./Models/Data/ProcessedRawData/TrainingSet/PvNormalDataNormalised_var0.02", training_data_to_save)
-    np.save("./Models/Data/ProcessedRawData/TestSet/PvNormalDataNormalised_var0.02", testing_data_to_save)
+    np.save("./Models/Data/ProcessedRawData/TrainingSet/PvNormalDataNormalised", training_data_to_save)
+    np.save("./Models/Data/ProcessedRawData/TestSet/PvNormalDataNormalised", testing_data_to_save)
     # to use the indices, the images must be turned into arrays first. Then, select the cols to keep using indices_kept.
     # Then add in the bias if needed. Add in the label if needed.
-    np.save("./Models/Data/ProcessedRawData/Index/Indices_Kept_data_var0.02", indices_kept)
-    np.save("./Models/Data/ProcessedRawData/MinData/min_across_all_features_var0.02", min_matrix)
-    np.save("./Models/Data/ProcessedRawData/RangeData/range_across_all_features_var0.02", range_matrix)
+    np.save("./Models/Data/ProcessedRawData/Index/Indices_Kept_data", indices_kept)
+    np.save("./Models/Data/ProcessedRawData/MinData/min_across_all_features", min_matrix)
+    np.save("./Models/Data/ProcessedRawData/RangeData/range_across_all_features", range_matrix)
 
 def get_indices_for_test_and_validation_set(num_samples_total, num_samples_test_set, num_samples_validation_set):
     indices_in_test_set = np.random.choice(num_samples_total, num_samples_test_set, replace=False)

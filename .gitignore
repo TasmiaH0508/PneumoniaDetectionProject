@@ -10,4 +10,4 @@ App/Models/SVM/svm_model.joblib
 
 App/Models/NeuralNetwork/weights.pth
 
-App/Models/CNN/Weights
+App/Models/CNN/highest_accuracy_model_0.948_t0.4.pth

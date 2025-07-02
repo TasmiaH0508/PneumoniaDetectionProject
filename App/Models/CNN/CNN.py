@@ -1,5 +1,6 @@
 import torch
 import torchvision
+from PIL import Image
 from torch import nn
 from torchvision.transforms import transforms
 import torch.optim as optim
@@ -10,7 +11,12 @@ print(device)
 
 target_size = (256, 256)
 
-transform_to_use = transforms.Compose([torchvision.transforms.Grayscale(num_output_channels=3),
+transform_to_use_for_training_set = transforms.Compose([torchvision.transforms.Grayscale(num_output_channels=3),
+                                                        torchvision.transforms.Resize(target_size),
+                                                        # torchvision.transforms.RandomHorizontalFlip(p=0.2),
+                                                        torchvision.transforms.ToTensor()])
+
+transform = transforms.Compose([torchvision.transforms.Grayscale(num_output_channels=3),
                                 torchvision.transforms.Resize(target_size),
                                 torchvision.transforms.ToTensor()])
 
@@ -43,7 +49,7 @@ class CNN(nn.Module):
         x = self.L8(x)
         return x.view(-1)
 
-def prepare_data_loader(transform=transform_to_use, get_training_set=True, get_validation_set=True, get_test_set=False,
+def prepare_data_loader(get_training_set=True, get_validation_set=True, get_test_set=False,
                         batch_size=32):
     path_to_training_data = '../Data/CNNData/Train'
     path_to_validation_set = '../Data/CNNData/Validation'
@@ -51,7 +57,7 @@ def prepare_data_loader(transform=transform_to_use, get_training_set=True, get_v
     # NORMAL samples have label 0 and PNEUMONIA samples have label 1
     training_loader = None
     if get_training_set:
-        training_set = torchvision.datasets.ImageFolder(path_to_training_data, transform=transform)
+        training_set = torchvision.datasets.ImageFolder(path_to_training_data, transform=transform_to_use_for_training_set)
         training_loader = torch.utils.data.DataLoader(training_set, batch_size=batch_size, shuffle=True)
 
     validation_loader = None
@@ -90,7 +96,7 @@ def get_recall(actual_labels, predicted_labels):
 
 def train(epochs, save_highest_accuracy_model=True, save_highest_recall_model=True, save_final_model=True, use_old_model=False,
           path_to_old_model='highest_recall_model.pth', path_to_use_for_max_accuracy_model='highest_accuracy_model.pth',
-          path_to_use_for_max_recall_model='highest_recall_model.pth', threshold=0.4):
+          path_to_use_for_max_recall_model='highest_recall_model.pth', threshold=0.4, track_validation_loss=False):
     net = CNN()
 
     if use_old_model:
@@ -102,7 +108,7 @@ def train(epochs, save_highest_accuracy_model=True, save_highest_recall_model=Tr
 
     train_loader, val_loader, _ = prepare_data_loader()
 
-    use_validation_set = save_highest_accuracy_model or save_highest_recall_model
+    use_validation_set = save_highest_accuracy_model or save_highest_recall_model or track_validation_loss
 
     max_accuracy_score = 0
     max_recall_score = 0
@@ -145,12 +151,14 @@ def train(epochs, save_highest_accuracy_model=True, save_highest_recall_model=Tr
 
             if save_highest_accuracy_model:
                 accuracy_score = get_accuracy(actual_labels, predicted_labels)
+                print("Accuracy:", accuracy_score)
                 if accuracy_score > max_accuracy_score:
                     max_accuracy_score = accuracy_score
                     max_accuracy_model = net
 
             if save_highest_recall_model:
                 recall_score = get_recall(actual_labels, predicted_labels)
+                print("Recall:", recall_score)
                 if recall_score > max_recall_score:
                     max_recall_score = recall_score
                     max_recall_model = net
@@ -197,10 +205,21 @@ def print_metrics_of_input_set(path_to_model, set_to_use='validation', threshold
     print('Accuracy:', accuracy)
     print('Recall:', recall)
 
-def predict_with_saved_model():
+def predict_with_saved_model(image):
+    input_to_net = transform(image)
+    input_to_net = input_to_net.unsqueeze(0)
+
     net = CNN()
-    # todo
-    return 0
+    weights = torch.load("App/Models/CNN/highest_accuracy_model_0.948_t0.4.pth", weights_only=True)
+    net.load_state_dict(weights)
+    net.eval()
+
+    threshold = 0.4
+    with torch.no_grad():
+        pred = net(input_to_net)
+        pred = (pred >= threshold).float()
+        pred = pred.item()
+    return pred
 
 """
 10:
@@ -235,13 +254,4 @@ Recall: 0.9333333333333333
 Test
 Accuracy: 0.9574074074074074
 Recall: 0.9555555555555556
-
-"Weights/highest_recall_model_0.993_t0.4.pth"
-Val
-Accuracy: 0.8925925925925926
-Recall: 0.9777777777777777
-
-Test
-Accuracy: 0.8814814814814815
-Recall: 0.9851851851851852
 """
