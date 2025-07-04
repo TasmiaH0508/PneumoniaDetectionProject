@@ -5,7 +5,7 @@ import altair as alt
 import torch
 from PIL import Image
 
-from App.ProcessRawData import min_max_normalise_with_predefined_params, pad_image
+from ProcessRawData import min_max_normalise_with_predefined_params, pad_image
 
 
 def display_description():
@@ -65,9 +65,9 @@ def process_image(image_path):
     # need the scaling
     image_array = image_array / 255
     image_array = np.reshape(image_array, (1, image_array.shape[0]))
-    min_matrix = np.load("App/Models/Data/ProcessedRawData/MinData/min_across_all_features.npy")
+    min_matrix = np.load("Models/Data/ProcessedRawData/MinData/min_across_all_features.npy")
     min_matrix = np.reshape(min_matrix, (image_array.shape[0], image_array.shape[1]))
-    range_matrix = np.load("App/Models/Data/ProcessedRawData/RangeData/range_across_all_features.npy")
+    range_matrix = np.load("Models/Data/ProcessedRawData/RangeData/range_across_all_features.npy")
     range_matrix = np.reshape(range_matrix, (image_array.shape[0], image_array.shape[1]))
     normalised_arr = min_max_normalise_with_predefined_params(image_array, min_matrix, range_matrix)
     bias = np.ones((1, 1))

@@ -1,8 +1,8 @@
 import streamlit as st
 from PIL import Image
 
-from App.AppUtils import display_description, process_image
-from App.Models.NeuralNetwork.NN import predict_with_saved_model
+from AppUtils import display_description, process_image
+from Models.NeuralNetwork.NN import predict_with_saved_model
 
 st.set_page_config(
     page_title="Predict Pneumonia with NN",

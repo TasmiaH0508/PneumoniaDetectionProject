@@ -1,13 +1,13 @@
-App/Models/Data/
+Models/Data/
 
-App/Models/Data/ProcessedCNNData/
+Models/Data/ProcessedCNNData/
 
-App/Models/Data
+Models/Data
 
-App/Models/Data/TestImages
+Models/Data/TestImages
 
-App/Models/SVM/svm_model.joblib
+Models/SVM/svm_model.joblib
 
-App/Models/NeuralNetwork/weights.pth
+Models/NeuralNetwork/weights.pth
 
-App/Models/CNN/highest_accuracy_model_0.948_t0.4.pth
+Models/CNN/highest_accuracy_model_0.948_t0.4.pth

@@ -325,13 +325,13 @@ def prepare_data():
 
     training_data_to_save = PvNormalDataTrain.numpy()
     testing_data_to_save = PvNormalDataTest.numpy()
-    np.save("./Models/Data/ProcessedRawData/TrainingSet/PvNormalDataNormalised", training_data_to_save)
-    np.save("./Models/Data/ProcessedRawData/TestSet/PvNormalDataNormalised", testing_data_to_save)
+    np.save("../Models/Data/ProcessedRawData/TrainingSet/PvNormalDataNormalised", training_data_to_save)
+    np.save("../Models/Data/ProcessedRawData/TestSet/PvNormalDataNormalised", testing_data_to_save)
     # to use the indices, the images must be turned into arrays first. Then, select the cols to keep using indices_kept.
     # Then add in the bias if needed. Add in the label if needed.
-    np.save("./Models/Data/ProcessedRawData/Index/Indices_Kept_data", indices_kept)
-    np.save("./Models/Data/ProcessedRawData/MinData/min_across_all_features", min_matrix)
-    np.save("./Models/Data/ProcessedRawData/RangeData/range_across_all_features", range_matrix)
+    np.save("../Models/Data/ProcessedRawData/Index/Indices_Kept_data", indices_kept)
+    np.save("../Models/Data/ProcessedRawData/MinData/min_across_all_features", min_matrix)
+    np.save("../Models/Data/ProcessedRawData/RangeData/range_across_all_features", range_matrix)
 
 def get_indices_for_test_and_validation_set(num_samples_total, num_samples_test_set, num_samples_validation_set):
     indices_in_test_set = np.random.choice(num_samples_total, num_samples_test_set, replace=False)

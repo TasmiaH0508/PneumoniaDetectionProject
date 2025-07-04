@@ -1,9 +1,7 @@
-import numpy as np
 import torch
 from torch import nn
 
-from App.ComputeMetrics import get_accuracy, get_recall
-from App.PrepareData import get_label, get_data_without_bias_and_label
+from PrepareData import get_label, get_data_without_bias_and_label
 
 device = (
     "cuda"
@@ -59,7 +57,7 @@ def train_model(model, epochs, train_data, lr=0.001, bias_present_for_training_s
 def predict_with_saved_model(processed_image_arr):
     num_input_features = 65536
     model = NeuralNetwork(num_input_features)
-    weights = torch.load("App/Models/NeuralNetwork/weights.pth", weights_only=True)
+    weights = torch.load("Models/NeuralNetwork/weights.pth", weights_only=True)
     model.load_state_dict(weights)
     model.eval()
 

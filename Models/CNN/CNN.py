@@ -1,6 +1,8 @@
+import os
+
+import gdown
 import torch
 import torchvision
-from PIL import Image
 from torch import nn
 from torchvision.transforms import transforms
 import torch.optim as optim
@@ -210,7 +212,12 @@ def predict_with_saved_model(image):
     input_to_net = input_to_net.unsqueeze(0)
 
     net = CNN()
-    weights = torch.load("App/Models/CNN/highest_accuracy_model_0.948_t0.4.pth", weights_only=True)
+    path_to_weights = "Models/CNN/highest_accuracy_model_0.948_t0.4.pth"
+    if not os.path.exists(path_to_weights):
+        url = "https://drive.google.com/file/d/1yJNKy-cvyZH-VwRcpQkOyeL2HZe8sG5t/view?usp=drive_link"
+        gdown.download(url, path_to_weights, quiet=False)
+        print("Downloaded weights")
+    weights = torch.load(path_to_weights, weights_only=True)
     net.load_state_dict(weights)
     net.eval()
 

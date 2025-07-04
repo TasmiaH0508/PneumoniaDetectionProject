@@ -1,7 +1,7 @@
 import torch
 
-from App.ComputeMetrics import get_accuracy, get_recall
-from App.PrepareData import *
+from ComputeMetrics import get_accuracy, get_recall
+from PrepareData import *
 import numpy as np
 
 

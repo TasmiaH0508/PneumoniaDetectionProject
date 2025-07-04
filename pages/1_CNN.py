@@ -1,8 +1,8 @@
 import streamlit as st
 from PIL import Image
 
-from App.AppUtils import display_description
-from App.Models.CNN.CNN import predict_with_saved_model
+from AppUtils import display_description
+from Models.CNN.CNN import predict_with_saved_model
 
 st.set_page_config(
     page_title="Predict Pneumonia with CNN",
@@ -42,6 +42,8 @@ def intro():
     else:
         st.warning("Please ensure that you have uploaded an image.")
 
+    display_findings()
+
 def predict():
     if st.session_state.uploaded_file is None:
         st.session_state.no_file_uploaded_error = True
@@ -54,7 +56,14 @@ def predict():
         st.session_state.is_predicted = True
 
 def display_findings():
-    #todo
-    return 0
+    st.markdown(
+        """
+        ### 🔎 About the Convolutional Neural Network model
+        
+        To train the model, a 70-15-15 training-validation-test split was used on the original dataset of 
+        3,600 images. A maximum accuracy of 95% and recall of 0.93 on the validation set. For the training set,
+        an accuracy of 96% and a recall of 0.96 was reached, demonstrating strong generalisation.
+        """
+    )
 
 intro()

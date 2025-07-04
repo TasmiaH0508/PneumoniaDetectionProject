@@ -2,7 +2,7 @@ import joblib
 import torch
 from sklearn import svm
 
-from App.PrepareData import get_data_without_bias_and_label, get_label
+from PrepareData import get_data_without_bias_and_label, get_label
 
 def train_model(train_data, kernel='rbf', degree=1, gamma=0.0004, save_model=False):
     '''
@@ -36,7 +36,7 @@ def predict_with_input_model(clf, test_data, has_label=True):
     return predicted
 
 def predict_with_saved_model(processed_image_array, has_label=True):
-    model = joblib.load('App/Models/SVM/svm_model.joblib')
+    model = joblib.load('Models/SVM/svm_model.joblib')
     input = processed_image_array
     if has_label:
         input = get_data_without_bias_and_label(processed_image_array, has_bias=False)
