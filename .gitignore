@@ -5,5 +5,3 @@ Models/Data/ProcessedCNNData/
 Models/Data
 
 Models/Data/TestImages
-
-Models/SVM/svm_model.joblib
