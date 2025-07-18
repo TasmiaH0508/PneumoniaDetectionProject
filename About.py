@@ -18,7 +18,6 @@ def intro():
         - SVM
         - Neural Network
         - CNN
-        - Perceptron (transformed features)
         
         ### 🛠️Processing the Data
 
